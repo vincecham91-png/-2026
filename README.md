@@ -129,7 +129,7 @@ MIT License — 详见 [LICENSE](LICENSE)
 ## 🔗 相关连结
 
 - Firebase Console: https://console.firebase.google.com/
-- GitHub Repository: https://github.com/USERNAME/StarPhotoShare
+- GitHub Repository: https://github.com/vincecham91-png/-2026
 
 ---
 
