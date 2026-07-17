@@ -38,13 +38,13 @@
       <!-- 登入表单 -->
       <form class="login-form" novalidate>
         <div class="form-group">
-          <label class="form-label" for="emailInput">Email</label>
+          <label class="form-label" for="emailInput">用户名 / Email</label>
           <input
-            type="email"
+            type="text"
             id="emailInput"
             class="input"
-            placeholder="teacher@school.edu.my"
-            autocomplete="email"
+            placeholder="Cham Chin Hong"
+            autocomplete="username"
             required
             aria-required="true"
           >
@@ -61,7 +61,6 @@
             required
             aria-required="true"
           >
-          <a href="#" class="forgot-password" id="forgotPasswordLink">忘记密码？</a>
         </div>
 
         <button type="button" id="loginBtn" class="btn btn--primary btn--lg btn--block">
@@ -102,26 +101,15 @@
         document.getElementById('passwordInput').addEventListener('keydown', function(e){
           if(e.key==='Enter'){ e.preventDefault(); teacherLogin(); }
         });
-        document.getElementById('forgotPasswordLink').addEventListener('click', function(e){
-          e.preventDefault();
-          var email = document.getElementById('emailInput').value.trim();
-          if(!email){ S.showToast('请先输入 Email 再点击忘记密码', 'warning'); return; }
-          var auth = S.getAuth ? S.getAuth() : firebase.auth();
-          auth.sendPasswordResetEmail(email).then(function(){
-            S.showToast('密码重置邮件已发送，请检查邮箱', 'success');
-          }).catch(function(err){
-            S.showToast('发送失败：' + (err.message||'未知错误'), 'error');
-          });
-        });
       }
 
       async function teacherLogin(){
-        var email = document.getElementById('emailInput').value.trim();
+        var username = document.getElementById('emailInput').value.trim();
         var password = document.getElementById('passwordInput').value;
         var errorDiv = document.getElementById('loginError');
         if(errorDiv) errorDiv.classList.remove('login-error--visible');
 
-        if(!email){ showError('请输入 Email'); return; }
+        if(!username){ showError('请输入用户名或 Email'); return; }
         if(!password){ showError('请输入密码'); return; }
 
         var btn = document.getElementById('loginBtn');
@@ -131,23 +119,51 @@
 
         try {
           var teacher = null;
-          if(S.teacherLogin){
-            teacher = await S.teacherLogin(email, password);
-          } else {
-            // 直接使用 Firebase Auth
-            var userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-            teacher = { uid: userCredential.user.uid, email: userCredential.user.email, role: 'teacher' };
+          var cfg = S.TEACHER_CONFIG;
+
+          // 1. 先尝试本地教师帐号
+          if (cfg && cfg.password === password &&
+              (username === cfg.username || username === cfg.email)) {
+            teacher = {
+              uid: 'local-teacher-001',
+              email: cfg.email,
+              name: cfg.displayName,
+              role: cfg.role
+            };
+            console.log('[TeacherLogin] 本地帐号验证成功');
+          }
+
+          // 2. 尝试 Firebase Auth
+          if (!teacher && S.teacherLogin) {
+            try {
+              teacher = await S.teacherLogin(username, password);
+            } catch(e) {
+              console.warn('[TeacherLogin] Firebase 登入失败:', e.message);
+            }
+          }
+
+          // 3. 降级：直接 Firebase Auth
+          if (!teacher && firebase.auth) {
+            try {
+              var userCredential = await firebase.auth().signInWithEmailAndPassword(username, password);
+              teacher = { uid: userCredential.user.uid, email: userCredential.user.email, role: 'teacher' };
+            } catch(e) {
+              console.warn('[TeacherLogin] Firebase Auth 失败:', e.message);
+            }
           }
 
           if(teacher){
             S.saveSession && S.saveSession('teacherSession', teacher);
-            if(S.addLog){ try { await S.addLog('login', teacher.uid||email, '教师登入'); } catch(e){} }
-            S.showToast && S.showToast('登入成功！', 'success');
+            if(S.addLog){ try { await S.addLog('login', teacher.uid||username, '教师登入'); } catch(e){} }
+            S.showToast && S.showToast('登入成功！欢迎 ' + (teacher.name||teacher.email||''), 'success');
             setTimeout(function(){ window.location.href = 'teacher.html'; }, 500);
+          } else {
+            showError('帐号或密码错误');
+            if(btn){ btn.style.animation='none'; btn.offsetHeight; btn.style.animation='shake 0.5s ease'; }
           }
         } catch(err){
           console.error('[TeacherLogin] 登入失败:', err);
-          showError('帐号或密码错误：' + (err.message||''));
+          showError('登入失败：' + (err.message||'请稍后再试'));
           if(btn){ btn.style.animation='none'; btn.offsetHeight; btn.style.animation='shake 0.5s ease'; }
         } finally {
           btn.classList.remove('btn--loading');

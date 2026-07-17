@@ -103,11 +103,13 @@ firebase deploy
 
 ## 👩‍🏫 教师帐号
 
-教师需要在 Firebase Authentication 中手动建立帐号：
+| 项目 | 内容 |
+|------|------|
+| 用户名 | **Cham Chin Hong** |
+| 密码 | **12345** |
+| Email | teacher@school.edu.my |
 
-1. 进入 Firebase Console → Authentication → Users
-2. Add User → Email: `teacher@school.edu.my`，设定密码
-3. 在 Firestore `teachers` Collection 中建立对应 Document
+> 教师也可通过 Firebase Authentication 登入。本地模式下自动验证。
 
 ---
 

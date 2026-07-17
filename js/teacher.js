@@ -56,6 +56,10 @@
   // 权限检查
   // ========================================
   async function checkPermission() {
+    // 检查本地帐号配置
+    var cfg = S.TEACHER_CONFIG;
+    var session = S.getSession && S.getSession('teacherSession');
+
     // 检查 Firebase Auth
     if (S.getCurrentTeacher) {
       try {
@@ -70,22 +74,27 @@
     }
 
     // 检查本地 Session
-    const session = S.getSession && S.getSession('teacherSession');
     if (session) {
       currentTeacher = session;
       updateTeacherUI();
       return true;
     }
 
-    // 开发模式：允许无登入访问
-    console.warn('[Teacher] 开发模式：跳过权限检查');
-    currentTeacher = {
-      name: 'Teacher',
-      email: 'teacher@school.edu.my',
-      role: 'teacher'
-    };
-    updateTeacherUI();
-    return true;
+    // 本地教师帐号（开发模式自动登入）
+    if (cfg) {
+      currentTeacher = {
+        uid: 'local-teacher-001',
+        email: cfg.email,
+        name: cfg.displayName,
+        role: cfg.role
+      };
+      updateTeacherUI();
+      return true;
+    }
+
+    console.warn('[Teacher] 无权限，请先登入');
+    window.location.href = 'teacher-login.html';
+    return false;
   }
 
   function updateTeacherUI() {

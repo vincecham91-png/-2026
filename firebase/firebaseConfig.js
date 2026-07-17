@@ -75,6 +75,17 @@ const COLLECTIONS = {
 };
 
 // ========================================
+// 教师本地帐号配置
+// ========================================
+const TEACHER_CONFIG = {
+  username: 'Cham Chin Hong',
+  email: 'teacher@school.edu.my',
+  password: '12345',
+  displayName: 'Cham Chin Hong',
+  role: 'teacher'
+};
+
+// ========================================
 // Storage 路径常量
 // ========================================
 const STORAGE_PATHS = {
@@ -101,3 +112,4 @@ window.SPSS.firebaseAuth = firebaseAuth;
 window.SPSS.COLLECTIONS = COLLECTIONS;
 window.SPSS.STORAGE_PATHS = STORAGE_PATHS;
 window.SPSS.ROLES = ROLES;
+window.SPSS.TEACHER_CONFIG = TEACHER_CONFIG;
