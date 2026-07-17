@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="星图照片分享系统 - 班级作品展示">
+  <meta name="theme-color" content="#050816">
+  <title>作品展示 · 星图照片分享系统</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌟</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/star.css">
+  <link rel="stylesheet" href="css/gallery.css">
+</head>
+<body>
+  <!-- 星空背景 -->
+  <div class="star-background"><div class="galaxy-layer"></div></div>
+  <canvas id="starCanvas"></canvas>
+
+  <!-- Header -->
+  <header class="header" role="banner">
+    <a href="index.html" class="header__logo" aria-label="返回首页">
+      <span class="header__logo-icon">🌟</span>
+      <span class="header__logo-text">Star Photo Share</span>
+    </a>
+    <nav class="header__nav" role="navigation">
+      <a href="index.html" class="header__nav-link" id="galleryHomeBtn">返回首页</a>
+      <a href="teacher.html" class="header__nav-link">教师后台</a>
+    </nav>
+  </header>
+
+  <main class="gallery-page" role="main">
+    <!-- 页面头部 -->
+    <div class="gallery-page__header">
+      <h1 class="gallery-page__title">🖼️ 班级作品展示</h1>
+      <div class="gallery-toolbar">
+        <!-- 班级选择 -->
+        <select id="galleryClassSelect" class="select" aria-label="选择班级">
+          <option value="">全部班级</option>
+        </select>
+
+        <!-- 排序 -->
+        <select id="gallerySort" class="select" aria-label="排序方式" style="min-width:120px">
+          <option value="name">按姓名</option>
+          <option value="time">按时间</option>
+          <option value="status">按状态</option>
+        </select>
+
+        <!-- 搜索 -->
+        <div class="search-box">
+          <span class="search-box__icon" aria-hidden="true">🔍</span>
+          <input type="text" id="gallerySearch" class="input" placeholder="搜索学生姓名..." aria-label="搜索学生">
+        </div>
+
+        <!-- 视图切换 -->
+        <div class="view-toggle" role="tablist" aria-label="视图模式">
+          <button class="view-toggle__btn view-toggle__btn--active" id="viewGridBtn" role="tab" aria-selected="true">📋 网格</button>
+          <button class="view-toggle__btn" id="galaxyViewBtn" role="tab" aria-selected="false">🌟 星图</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 作品网格 -->
+    <div class="gallery-grid" id="galleryGrid" role="list" aria-label="学生作品列表">
+      <div class="empty-state" style="grid-column:1/-1">
+        <div class="spinner" style="margin:0 auto 16px"></div>
+        <p class="empty-state__text">正在加载作品...</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer" role="contentinfo">
+    <span>Version 1.0</span>
+    <span class="footer__divider">·</span>
+    <span>Powered by Firebase</span>
+  </footer>
+
+  <!-- JavaScript -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="firebase/firebaseConfig.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/firebase.js"></script>
+  <script src="js/gallery.js"></script>
+  <!-- 星空背景 -->
+  <script>
+    (function(){
+      var c=document.getElementById('starCanvas');
+      if(!c)return;
+      var x=c.getContext('2d'),s=[];
+      function r(){c.width=innerWidth;c.height=innerHeight;}
+      r();addEventListener('resize',r);
+      for(var i=0;i<150;i++)s.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,R:Math.random()*2+.5,o:Math.random()*.7+.3,S:Math.random()*.02+.005,p:Math.random()*Math.PI*2});
+      (function a(){x.clearRect(0,0,c.width,c.height);
+        s.forEach(function(s){var t=Math.sin(s.p)*.5+.5;x.fillStyle='rgba(255,255,255,'+(s.o*t)+')';x.beginPath();x.arc(s.x,s.y,s.R,0,Math.PI*2);x.fill();s.p+=s.S});
+        requestAnimationFrame(a)})();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="星图照片分享系统 - 学校专用的学生照片分享平台，银河星空主题，记录生活，分享感动。">
+  <meta name="keywords" content="照片分享,学校,学生作品,星空,银河,Firebase">
+  <meta name="author" content="Star Photo Share Development Team">
+  <meta name="theme-color" content="#050816">
+  <meta property="og:title" content="星图照片分享系统">
+  <meta property="og:description" content="记录生活，分享感动。学校专用照片分享平台。">
+  <meta property="og:type" content="website">
+  <title>星图照片分享系统 · Star Photo Share</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌟</text></svg>">
+  <!-- 字体 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- CSS Design System -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/theme.css">
+  <!-- 页面专属样式 -->
+  <link rel="stylesheet" href="css/star.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 星空背景 -->
+  <div class="star-background">
+    <div class="galaxy-layer"></div>
+    <div class="nebula nebula--1"></div>
+    <div class="nebula nebula--2"></div>
+    <div class="nebula nebula--3"></div>
+    <div class="nebula nebula--4"></div>
+    <div class="nebula nebula--5"></div>
+  </div>
+  <canvas id="starCanvas"></canvas>
+  <div class="meteor-container"></div>
+
+  <!-- Header -->
+  <header class="header" role="banner">
+    <a href="index.html" class="header__logo" aria-label="返回首页">
+      <span class="header__logo-icon">🌟</span>
+      <span class="header__logo-text">Star Photo Share</span>
+    </a>
+    <nav class="header__nav" role="navigation" aria-label="主导航">
+      <a href="#classGalaxy" class="header__nav-link">班级星球</a>
+      <a href="#about" class="header__nav-link">关于系统</a>
+      <a href="teacher-login.html" class="header__nav-link header__nav-link--primary" id="teacherBtn">教师登入</a>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main main--full" role="main">
+    <!-- Hero -->
+    <section class="hero" aria-label="首页横幅">
+      <div class="hero__stars">★★★★★★★★★★</div>
+      <h1 class="hero__title">星图照片分享系统</h1>
+      <p class="hero__subtitle">Star Photo Share System</p>
+      <p class="hero__tagline">「记录生活，分享感动。」</p>
+      <div class="hero__cta">
+        <button class="btn btn--primary btn--lg" id="ctaExplore" aria-label="开始探索班级">
+          开始探索 🚀
+        </button>
+      </div>
+      <div class="hero__scroll-hint" aria-label="向下滚动查看更多">
+        <span>往下滚动</span>
+        <span class="hero__scroll-arrow">↓</span>
+      </div>
+    </section>
+
+    <!-- Class Galaxy -->
+    <section class="class-galaxy" id="classGalaxy" aria-label="班级星球">
+      <h2 class="class-galaxy__title">🪐 选择你的班级</h2>
+      <p class="class-galaxy__subtitle">点击星球进入你的班级，上传你的精彩作品</p>
+      <div class="planet-grid" id="planetGrid" role="list" aria-label="班级列表">
+        <!-- 星球由 JavaScript 动态生成 -->
+        <div class="empty-state" style="grid-column:1/-1">
+          <div class="spinner" style="margin:0 auto 16px"></div>
+          <p class="empty-state__text">正在加载班级...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- About -->
+    <section class="about-section" id="about" aria-label="系统特色">
+      <h2 class="about-section__title">✨ 系统特色</h2>
+      <div class="about-section__features">
+        <div class="feature-item glass-card animate-slideInUp">
+          <div class="feature-item__icon">🌌</div>
+          <h3 class="feature-item__title">星空主题</h3>
+          <p class="feature-item__text">动态星空、流星、银河，沉浸式视觉体验</p>
+        </div>
+        <div class="feature-item glass-card animate-slideInUp">
+          <div class="feature-item__icon">📤</div>
+          <h3 class="feature-item__title">轻松上传</h3>
+          <p class="feature-item__text">支持本地上传与图片网址，自动压缩优化</p>
+        </div>
+        <div class="feature-item glass-card animate-slideInUp">
+          <div class="feature-item__icon">🖼️</div>
+          <h3 class="feature-item__title">课堂呈堂</h3>
+          <p class="feature-item__text">全屏展示模式，适合课堂投影分享</p>
+        </div>
+        <div class="feature-item glass-card animate-slideInUp">
+          <div class="feature-item__icon">📱</div>
+          <h3 class="feature-item__title">全平台支援</h3>
+          <p class="feature-item__text">电脑、平板、手机皆可使用，响应式设计</p>
+        </div>
+        <div class="feature-item glass-card animate-slideInUp">
+          <div class="feature-item__icon">☁️</div>
+          <h3 class="feature-item__title">云端同步</h3>
+          <p class="feature-item__text">Firebase 云端储存，即时更新，资料安全</p>
+        </div>
+        <div class="feature-item glass-card animate-slideInUp">
+          <div class="feature-item__icon">📊</div>
+          <h3 class="feature-item__title">教师后台</h3>
+          <p class="feature-item__text">完成率统计、图表分析、名单下载</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer" role="contentinfo">
+    <span>Version 1.0</span>
+    <span class="footer__divider">·</span>
+    <span>&copy; 2026 School</span>
+    <span class="footer__divider">·</span>
+    <span>Powered by Firebase</span>
+  </footer>
+
+  <!-- JavaScript -->
+  <!-- Firebase SDK（CDN） -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+  <!-- Firebase 配置 -->
+  <script src="firebase/firebaseConfig.js"></script>
+  <!-- 工具库 -->
+  <script src="js/util.js"></script>
+  <!-- Firebase 操作 -->
+  <script src="js/firebase.js"></script>
+  <!-- 首页逻辑 -->
+  <script src="js/app.js"></script>
+</body>
+</html>

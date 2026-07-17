@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="星图照片分享系统 - 学生上传作品">
+  <meta name="theme-color" content="#050816">
+  <title>我的作品 · 星图照片分享系统</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌟</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/star.css">
+  <link rel="stylesheet" href="css/student.css">
+</head>
+<body>
+  <!-- 星空背景 -->
+  <div class="star-background"><div class="galaxy-layer"></div></div>
+  <canvas id="starCanvas"></canvas>
+
+  <!-- Header -->
+  <header class="header" role="banner">
+    <a href="index.html" class="header__logo" aria-label="返回首页">
+      <span class="header__logo-icon">🌟</span>
+      <span class="header__logo-text">Star Photo Share</span>
+    </a>
+    <nav class="header__nav" role="navigation">
+      <a href="index.html" class="header__nav-link" id="homeBtn">返回首页</a>
+      <button class="header__nav-link btn--ghost" id="logoutBtn" style="background:none;border:none;cursor:pointer;font-size:inherit;font-family:inherit">登出</button>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main class="student-page" role="main">
+    <div class="container">
+      <div class="layout-two-col" style="padding:var(--space-8) 0">
+        <!-- 左侧：个人资料 -->
+        <aside class="student-profile" aria-label="个人资料">
+          <div class="glass-card">
+            <div class="student-profile__avatar" id="profileAvatar" aria-hidden="true">👤</div>
+            <h2 class="student-profile__name" id="profileName">-</h2>
+            <p class="student-profile__class" id="profileClass">-</p>
+            <p class="student-profile__id" id="profileId">-</p>
+            <div class="student-profile__status" id="profileStatus">
+              <span class="badge badge--neutral">加载中...</span>
+            </div>
+            <div class="student-profile__info">
+              <div class="student-profile__info-item">
+                <span class="student-profile__info-label">系统版本</span>
+                <span class="student-profile__info-value">v1.0</span>
+              </div>
+              <div class="student-profile__info-item">
+                <span class="student-profile__info-label">支援格式</span>
+                <span class="student-profile__info-value">JPG, PNG, WEBP</span>
+              </div>
+              <div class="student-profile__info-item">
+                <span class="student-profile__info-label">图片上限</span>
+                <span class="student-profile__info-value">10MB</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- 右侧：上传区域 -->
+        <section class="student-upload" aria-label="作品上传">
+          <h2 class="student-upload__title">📤 我的作品</h2>
+
+          <!-- 上传图片 -->
+          <div class="student-upload__section">
+            <h3 class="student-upload__section-title">上传照片</h3>
+            <input type="file" id="photoFile" accept="image/jpeg,image/png,image/webp" style="display:none" aria-hidden="true">
+            <div class="upload-zone" id="previewArea" tabindex="0" role="button" aria-label="点击上传照片">
+              <div class="preview-area__placeholder">
+                <div class="preview-area__placeholder-icon">📷</div>
+                <div class="preview-area__placeholder-text">点击或拖曳图片到此处上传</div>
+              </div>
+            </div>
+            <p class="form-hint">支持 JPG、PNG、WEBP，最大 10MB</p>
+          </div>
+
+          <!-- 上传进度 -->
+          <div class="upload-progress" id="uploadProgress">
+            <div class="upload-progress__bar">
+              <div class="upload-progress__fill" id="progressFill"></div>
+            </div>
+            <div class="upload-progress__text">
+              <span>上传中...</span>
+              <span id="progressText">0%</span>
+            </div>
+          </div>
+
+          <!-- 图片网址 -->
+          <div class="student-upload__section">
+            <h3 class="student-upload__section-title">或 填写图片网址</h3>
+            <div class="form-group">
+              <input
+                type="url"
+                id="photoLink"
+                class="input"
+                placeholder="https://..."
+                aria-label="图片网址"
+              >
+              <p class="form-hint">上传图片后可留空。两者至少需填写一个。</p>
+            </div>
+          </div>
+
+          <!-- 分享原因 -->
+          <div class="student-upload__section">
+            <h3 class="student-upload__section-title">分享原因</h3>
+            <div class="form-group">
+              <textarea
+                id="reasonInput"
+                class="textarea"
+                placeholder="请分享：为什么选择这张照片？它有什么意义？"
+                maxlength="1000"
+                aria-label="分享原因"
+              ></textarea>
+              <div class="char-count" id="charCount">0 / 1000</div>
+            </div>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="student-actions">
+            <button class="btn btn--primary" id="saveBtn">💾 储存</button>
+            <button class="btn btn--ghost" id="clearBtn">🔄 清空</button>
+            <button class="btn btn--danger" id="deleteBtn" style="display:none">🗑 删除作品</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer" role="contentinfo">
+    <span>Version 1.0</span>
+    <span class="footer__divider">·</span>
+    <span>Powered by Firebase</span>
+  </footer>
+
+  <!-- JavaScript -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="firebase/firebaseConfig.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/firebase.js"></script>
+  <script src="js/student.js"></script>
+  <!-- Compressor.js（CDN） -->
+  <script src="https://cdn.jsdelivr.net/npm/compressorjs@1.2.1/dist/compressor.min.js"></script>
+  <!-- 星空背景 -->
+  <script>
+    (function(){
+      var c=document.getElementById('starCanvas');
+      if(!c)return;
+      var x=c.getContext('2d'),s=[];
+      function r(){c.width=innerWidth;c.height=innerHeight;}
+      r();addEventListener('resize',r);
+      for(var i=0;i<150;i++)s.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,R:Math.random()*2+.5,o:Math.random()*.7+.3,S:Math.random()*.02+.005,p:Math.random()*Math.PI*2});
+      (function a(){x.clearRect(0,0,c.width,c.height);
+        s.forEach(function(s){var t=Math.sin(s.p)*.5+.5;x.fillStyle='rgba(255,255,255,'+(s.o*t)+')';x.beginPath();x.arc(s.x,s.y,s.R,0,Math.PI*2);x.fill();s.p+=s.S});
+        requestAnimationFrame(a)})();
+    })();
+  </script>
+</body>
+</html>

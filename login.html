@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="星图照片分享系统 - 学生登入">
+  <meta name="theme-color" content="#050816">
+  <title>学生登入 · 星图照片分享系统</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌟</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/star.css">
+  <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+  <!-- 星空背景 -->
+  <div class="star-background">
+    <div class="galaxy-layer"></div>
+  </div>
+  <canvas id="starCanvas"></canvas>
+  <div class="meteor-container"></div>
+
+  <!-- 登入页面 -->
+  <main class="login-page" role="main">
+    <div class="login-card glass-card">
+      <div class="login-card__logo">🌟</div>
+      <h1 class="login-card__title">学生登入</h1>
+      <p class="login-card__subtitle">选择班级、姓名，输入学号即可登入</p>
+
+      <!-- 班级预选 -->
+      <div id="preSelectedClass" class="login-class-badge" style="display:none"></div>
+
+      <!-- 错误提示 -->
+      <div id="loginError" class="login-error" role="alert"></div>
+
+      <!-- 登入表单 -->
+      <form class="login-form" autocomplete="off" novalidate>
+        <!-- 班级选择 -->
+        <div class="form-group">
+          <label class="form-label" for="classSelect">班级</label>
+          <select id="classSelect" class="select" required aria-required="true">
+            <option value="">请选择班级</option>
+          </select>
+        </div>
+
+        <!-- 姓名选择 -->
+        <div class="form-group">
+          <label class="form-label" for="nameSelect">姓名</label>
+          <select id="nameSelect" class="select" required aria-required="true" disabled>
+            <option value="">请先选择班级</option>
+          </select>
+        </div>
+
+        <!-- 学号（密码） -->
+        <div class="form-group">
+          <label class="form-label" for="passwordInput">学号（密码）</label>
+          <input
+            type="password"
+            id="passwordInput"
+            class="input"
+            placeholder="请输入你的学号"
+            maxlength="10"
+            autocomplete="off"
+            required
+            aria-required="true"
+          >
+          <p class="form-hint">密码为你的学号，例如：240301</p>
+        </div>
+
+        <!-- 记住班级 -->
+        <div class="login-remember">
+          <label class="checkbox-label">
+            <input type="checkbox" id="rememberClass">
+            <span>记住班级</span>
+          </label>
+        </div>
+
+        <!-- 登入按钮 -->
+        <button type="button" id="loginBtn" class="btn btn--primary btn--lg btn--block">
+          登入 🚀
+        </button>
+      </form>
+
+      <!-- 分隔线 -->
+      <div class="login-divider">或</div>
+
+      <!-- 教师登入连结 -->
+      <p class="login-teacher-link">
+        我是老师？<a href="teacher-login.html">前往教师登入</a>
+      </p>
+
+      <!-- 返回首页 -->
+      <a href="index.html" class="login-back" id="backHomeBtn">← 返回首页</a>
+    </div>
+  </main>
+
+  <!-- JavaScript -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="firebase/firebaseConfig.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/firebase.js"></script>
+  <script src="js/login.js"></script>
+
+  <!-- 星空背景脚本（简化版） -->
+  <script>
+    (function(){
+      var canvas = document.getElementById('starCanvas');
+      if(!canvas) return;
+      var ctx = canvas.getContext('2d');
+      var stars = [];
+      function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+      resize();
+      window.addEventListener('resize', function(){ resize(); });
+      for(var i=0;i<200;i++){
+        stars.push({
+          x:Math.random()*window.innerWidth,
+          y:Math.random()*window.innerHeight,
+          r:Math.random()*2+0.5,
+          o:Math.random()*0.7+0.3,
+          s:Math.random()*0.02+0.005,
+          p:Math.random()*Math.PI*2
+        });
+      }
+      function animate(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        stars.forEach(function(s){
+          var t = Math.sin(s.p)*0.5+0.5;
+          ctx.fillStyle='rgba(255,255,255,'+(s.o*t)+')';
+          ctx.beginPath();
+          ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+          ctx.fill();
+          s.p+=s.s;
+        });
+        requestAnimationFrame(animate);
+      }
+      animate();
+    })();
+  </script>
+</body>
+</html>
