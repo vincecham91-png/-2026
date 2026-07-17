@@ -92,7 +92,7 @@
   }
 
   // ========================================
-  // 加载作品
+  // 加载作品（合并学生名单与作品数据）
   // ========================================
   async function loadWorks() {
     const container = document.getElementById('galleryGrid');
@@ -101,45 +101,57 @@
     container.innerHTML = '<div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div>';
 
     try {
-      let works = [];
+      let students = [];
+      let worksMap = {};
 
-      if (S.getWorksByClass && currentClass) {
+      // 1. 加载所有学生名单
+      if (S.getStudentsByClass && currentClass) {
         try {
-          works = await S.getWorksByClass(currentClass);
-        } catch (e) {}
-      } else if (S.getAllWorks) {
-        try {
-          works = await S.getAllWorks();
-        } catch (e) {}
+          students = await S.getStudentsByClass(currentClass);
+        } catch (e) { console.warn('[Gallery] Firebase 学生加载失败'); }
       }
 
-      // 本地数据（降级）
-      if (works.length === 0) {
+      // 本地降级
+      if (students.length === 0) {
         try {
           const response = await fetch('data/students.json');
           if (response.ok) {
-            let students = await response.json();
+            let allStudents = await response.json();
             if (currentClass) {
-              students = students.filter(s => s.class === currentClass);
+              allStudents = allStudents.filter(s => s.class === currentClass);
             }
-            works = students
-              .filter(s => s.photoURL || s.photoLink)
-              .map(s => ({
-                id: s.studentId,
-                studentId: s.studentId,
-                name: s.name,
-                class: s.class,
-                photoURL: s.photoURL || '',
-                photoLink: s.photoLink || '',
-                reason: s.reason || '',
-                completed: s.completed || false,
-                updatedAt: s.uploadTime || null
-              }));
+            students = allStudents;
           }
-        } catch (e) {}
+        } catch (e) { console.warn('[Gallery] 本地学生数据加载失败'); }
       }
 
-      allWorks = works;
+      // 2. 加载作品数据并建立映射
+      try {
+        let works = [];
+        if (S.getWorksByClass && currentClass) {
+          works = await S.getWorksByClass(currentClass);
+        }
+        works.forEach(w => {
+          worksMap[w.studentId || w.id] = w;
+        });
+      } catch (e) { console.warn('[Gallery] 作品数据加载失败'); }
+
+      // 3. 合并：所有学生都显示，有作品的显示作品信息
+      allWorks = students.map(s => {
+        const work = worksMap[s.studentId];
+        return {
+          id: s.studentId,
+          studentId: s.studentId,
+          name: s.name,
+          class: s.class,
+          photoURL: work ? (work.photoURL || '') : (s.photoURL || ''),
+          photoLink: work ? (work.photoLink || '') : (s.photoLink || ''),
+          reason: work ? (work.reason || '') : (s.reason || ''),
+          completed: !!(work || s.completed || s.photoURL || s.photoLink),
+          updatedAt: work ? (work.updatedAt || work.createdAt) : (s.uploadTime || null)
+        };
+      });
+
       filteredWorks = [...allWorks];
       renderGallery(filteredWorks);
 
@@ -360,13 +372,11 @@
               <p style="color:var(--text-secondary);font-size:var(--font-size-sm);line-height:1.6">${S.escapeHTML ? S.escapeHTML(work.reason) : work.reason}</p>
             </div>
           ` : ''}
-          ${isCompleted ? `
-            <div class="modal-nav">
-              <button class="modal-nav__btn" id="modalPrevBtn" aria-label="上一位">&larr;</button>
-              <span class="modal-nav__counter">${index + 1} / ${filteredWorks.length}</span>
-              <button class="modal-nav__btn" id="modalNextBtn" aria-label="下一位">&rarr;</button>
-            </div>
-          ` : ''}
+          <div class="modal-nav">
+            <button class="modal-nav__btn" id="modalPrevBtn" aria-label="上一位">&larr;</button>
+            <span class="modal-nav__counter">${index + 1} / ${filteredWorks.length}</span>
+            <button class="modal-nav__btn" id="modalNextBtn" aria-label="下一位">&rarr;</button>
+          </div>
         </div>
       `,
       footer: `
