@@ -19,49 +19,140 @@
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/star.css">
   <link rel="stylesheet" href="css/login.css">
+  <style>
+    /* 班级标签按钮 */
+    .class-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .class-tab {
+      flex: 1;
+      min-width: 70px;
+      padding: 10px 8px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      font-size: var(--font-size-sm);
+      font-family: inherit;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      text-align: center;
+    }
+    .class-tab:hover {
+      background: rgba(255,255,255,0.12);
+      color: var(--text-primary);
+    }
+    .class-tab--active {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-color: transparent;
+      color: #fff;
+      font-weight: var(--font-weight-semibold);
+      box-shadow: var(--shadow-glow-blue);
+    }
+    /* 姓名卡片网格 */
+    .name-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 8px;
+      max-height: 280px;
+      overflow-y: auto;
+      padding: 4px;
+      margin-bottom: 16px;
+    }
+    .name-card {
+      padding: 12px 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      font-size: var(--font-size-sm);
+      font-family: inherit;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      text-align: center;
+      word-break: keep-all;
+    }
+    .name-card:hover {
+      background: rgba(37,99,235,0.2);
+      border-color: var(--primary);
+      color: var(--text-primary);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-glow-blue);
+    }
+    .name-card--selected {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-color: transparent;
+      color: #fff;
+      font-weight: var(--font-weight-semibold);
+      box-shadow: var(--shadow-glow-blue);
+    }
+    .name-grid::-webkit-scrollbar { width: 4px; }
+    .name-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+    /* 选中的学生信息 */
+    .selected-student-info {
+      display: none;
+      text-align: center;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: rgba(37,99,235,0.15);
+      border: 1px solid rgba(37,99,235,0.3);
+      border-radius: var(--radius-md);
+    }
+    .selected-student-info--visible { display: block; }
+    .selected-student-name {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      color: var(--text-primary);
+    }
+    .selected-student-id {
+      font-size: var(--font-size-xs);
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+  </style>
 </head>
 <body>
-  <!-- 星空背景 -->
-  <div class="star-background">
-    <div class="galaxy-layer"></div>
-  </div>
+  <div class="star-background"><div class="galaxy-layer"></div></div>
   <canvas id="starCanvas"></canvas>
   <div class="meteor-container"></div>
 
-  <!-- 登入页面 -->
   <main class="login-page" role="main">
-    <div class="login-card glass-card">
+    <div class="login-card glass-card" style="max-width:520px">
       <div class="login-card__logo">🌟</div>
       <h1 class="login-card__title">学生登入</h1>
-      <p class="login-card__subtitle">选择班级、姓名，输入学号即可登入</p>
+      <p class="login-card__subtitle">选择你的班级，点击你的名字，然后输入学号</p>
 
-      <!-- 班级预选 -->
-      <div id="preSelectedClass" class="login-class-badge" style="display:none"></div>
-
-      <!-- 错误提示 -->
       <div id="loginError" class="login-error" role="alert"></div>
 
-      <!-- 登入表单 -->
       <form class="login-form" autocomplete="off" novalidate>
-        <!-- 班级选择 -->
+        <!-- 步骤1：选择班级 -->
         <div class="form-group">
-          <label class="form-label" for="classSelect">班级</label>
-          <select id="classSelect" class="select" required aria-required="true">
-            <option value="">请选择班级</option>
-          </select>
+          <label class="form-label">① 选择班级</label>
+          <div class="class-tabs" id="classTabs">
+            <span style="color:var(--text-muted);font-size:var(--font-size-sm)">加载中...</span>
+          </div>
         </div>
 
-        <!-- 姓名选择 -->
+        <!-- 步骤2：点击名字 -->
         <div class="form-group">
-          <label class="form-label" for="nameSelect">姓名</label>
-          <select id="nameSelect" class="select" required aria-required="true" disabled>
-            <option value="">请先选择班级</option>
-          </select>
+          <label class="form-label">② 点击你的名字</label>
+          <div class="name-grid" id="nameGrid">
+            <span style="color:var(--text-muted);font-size:var(--font-size-sm);grid-column:1/-1;text-align:center;padding:20px">↑ 请先选择班级</span>
+          </div>
         </div>
 
-        <!-- 学号（密码） -->
+        <!-- 已选学生 -->
+        <div class="selected-student-info" id="selectedStudentInfo">
+          <div class="selected-student-name" id="selectedName"></div>
+          <div class="selected-student-id" id="selectedId"></div>
+        </div>
+
+        <!-- 步骤3：输入学号 -->
         <div class="form-group">
-          <label class="form-label" for="passwordInput">学号（密码）</label>
+          <label class="form-label" for="passwordInput">③ 输入学号（密码）</label>
           <input
             type="password"
             id="passwordInput"
@@ -72,7 +163,7 @@
             required
             aria-required="true"
           >
-          <p class="form-hint">密码为你的学号，例如：240301</p>
+          <p class="form-hint">密码为你的学号</p>
         </div>
 
         <!-- 记住班级 -->
@@ -83,26 +174,17 @@
           </label>
         </div>
 
-        <!-- 登入按钮 -->
         <button type="button" id="loginBtn" class="btn btn--primary btn--lg btn--block">
           登入 🚀
         </button>
       </form>
 
-      <!-- 分隔线 -->
       <div class="login-divider">或</div>
-
-      <!-- 教师登入连结 -->
-      <p class="login-teacher-link">
-        我是老师？<a href="teacher-login.html">前往教师登入</a>
-      </p>
-
-      <!-- 返回首页 -->
+      <p class="login-teacher-link">我是老师？<a href="teacher-login.html">前往教师登入</a></p>
       <a href="index.html" class="login-back" id="backHomeBtn">← 返回首页</a>
     </div>
   </main>
 
-  <!-- JavaScript -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
@@ -111,40 +193,17 @@
   <script src="js/util.js"></script>
   <script src="js/firebase.js"></script>
   <script src="js/login.js"></script>
-
-  <!-- 星空背景脚本（简化版） -->
   <script>
     (function(){
-      var canvas = document.getElementById('starCanvas');
-      if(!canvas) return;
-      var ctx = canvas.getContext('2d');
-      var stars = [];
-      function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-      resize();
-      window.addEventListener('resize', function(){ resize(); });
-      for(var i=0;i<200;i++){
-        stars.push({
-          x:Math.random()*window.innerWidth,
-          y:Math.random()*window.innerHeight,
-          r:Math.random()*2+0.5,
-          o:Math.random()*0.7+0.3,
-          s:Math.random()*0.02+0.005,
-          p:Math.random()*Math.PI*2
-        });
-      }
-      function animate(){
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        stars.forEach(function(s){
-          var t = Math.sin(s.p)*0.5+0.5;
-          ctx.fillStyle='rgba(255,255,255,'+(s.o*t)+')';
-          ctx.beginPath();
-          ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-          ctx.fill();
-          s.p+=s.s;
-        });
-        requestAnimationFrame(animate);
-      }
-      animate();
+      var c=document.getElementById('starCanvas');
+      if(!c)return;
+      var x=c.getContext('2d'),s=[];
+      function r(){c.width=innerWidth;c.height=innerHeight;}
+      r();addEventListener('resize',r);
+      for(var i=0;i<200;i++)s.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,R:Math.random()*2+.5,o:Math.random()*.7+.3,S:Math.random()*.02+.005,p:Math.random()*Math.PI*2});
+      (function a(){x.clearRect(0,0,c.width,c.height);
+        s.forEach(function(s){var t=Math.sin(s.p)*.5+.5;x.fillStyle='rgba(255,255,255,'+(s.o*t)+')';x.beginPath();x.arc(s.x,s.y,s.R,0,Math.PI*2);x.fill();s.p+=s.S});
+        requestAnimationFrame(a)})();
     })();
   </script>
 </body>
