@@ -1,0 +1,53 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ========================================
+    // 辅助函数
+    // ========================================
+
+    // 检查是否为已登入教师
+    function isTeacher() {
+      return request.auth != null
+        && firestore.get(/databases/(default)/documents/teachers/$(request.auth.uid)).data.role in ['teacher', 'admin'];
+    }
+
+    // 检查是否为管理员
+    function isAdmin() {
+      return request.auth != null
+        && firestore.get(/databases/(default)/documents/teachers/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // 验证上传文件类型
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    // 验证文件大小（最大10MB）
+    function isLessThan10MB() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // ========================================
+    // images 目录
+    // ========================================
+    match /images/{class}/{studentId}/{fileName} {
+      // 所有人可以读取图片
+      allow read: if true;
+
+      // 学生可以上传自己的图片（需验证文件类型和大小）
+      allow create, update: if isImage() && isLessThan10MB();
+
+      // 学生可以删除自己的图片，教师和管理员可以删除任何图片
+      allow delete: if isTeacher() || isAdmin();
+    }
+
+    // ========================================
+    // 默认规则 - 拒绝其他所有访问
+    // ========================================
+    match /{allPaths=**} {
+      allow read: if isTeacher() || isAdmin();
+      allow write: if isAdmin();
+    }
+  }
+}

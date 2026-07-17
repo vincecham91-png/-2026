@@ -1,0 +1,34 @@
+{
+  "name": "star-photo-share",
+  "version": "1.0.0",
+  "description": "Star Photo Share System - 星图照片分享系统",
+  "main": "index.html",
+  "scripts": {
+    "convert": "node scripts/convertExcel.js",
+    "import": "node scripts/importFirestore.js",
+    "validate": "node scripts/validateExcel.js",
+    "deploy": "firebase deploy",
+    "test": "echo \"See docs/13-Testing-QA.md for manual testing plan\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/USERNAME/StarPhotoShare.git"
+  },
+  "keywords": [
+    "school",
+    "photo-sharing",
+    "firebase",
+    "education"
+  ],
+  "author": "Star Photo Share Development Team",
+  "license": "MIT",
+  "dependencies": {
+    "firebase": "^10.12.0",
+    "chart.js": "^4.4.0",
+    "xlsx": "^0.18.5",
+    "compressorjs": "^1.2.1"
+  },
+  "devDependencies": {
+    "firebase-tools": "^13.0.0"
+  }
+}

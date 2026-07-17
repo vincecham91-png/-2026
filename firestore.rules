@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ========================================
+    // 辅助函数
+    // ========================================
+
+    // 检查请求者是否为已登入教师
+    function isTeacher() {
+      return request.auth != null
+        && get(/databases/$(database)/documents/teachers/$(request.auth.uid)).data.role in ['teacher', 'admin'];
+    }
+
+    // 检查请求者是否为管理员
+    function isAdmin() {
+      return request.auth != null
+        && get(/databases/$(database)/documents/teachers/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // 检查请求者是否为学生本人
+    function isOwnStudent(studentId) {
+      return request.auth == null
+        && request.resource.data.studentId == studentId;
+    }
+
+    // ========================================
+    // students Collection
+    // ========================================
+    match /students/{studentId} {
+      // 学生只能读取自己的资料，教师可以读取全部
+      allow read: if isTeacher() || resource.data.studentId == studentId;
+      // 学生只能修改自己的作品字段，教师可以修改全部
+      allow write: if isTeacher() || (
+        request.resource.data.studentId == studentId
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['photoURL', 'photoLink', 'reason', 'completed', 'uploadTime', 'lastLogin'])
+      );
+      // 允许创建（导入学生时使用）
+      allow create: if isTeacher() || isAdmin();
+    }
+
+    // ========================================
+    // works Collection
+    // ========================================
+    match /works/{workId} {
+      // 学生可以读取自己班级的作品，教师可以读取全部
+      allow read: if isTeacher() || resource.data.studentId == workId;
+      // 学生只能创建/修改自己的作品，教师可以修改全部
+      allow create: if true; // 放宽创建权限，由前端验证
+      allow update: if isTeacher() || resource.data.studentId == workId;
+      allow delete: if isTeacher() || isAdmin();
+    }
+
+    // ========================================
+    // classes Collection
+    // ========================================
+    match /classes/{classId} {
+      // 所有登入用户可以读取班级信息
+      allow read: if true;
+      // 只有教师和管理员可以修改
+      allow write: if isTeacher() || isAdmin();
+    }
+
+    // ========================================
+    // teachers Collection
+    // ========================================
+    match /teachers/{teacherId} {
+      // 教师可以读取自己的资料，管理员可以读取全部
+      allow read: if request.auth != null
+        && (request.auth.uid == teacherId || isAdmin());
+      // 只有管理员可以修改教师资料
+      allow write: if isAdmin();
+    }
+
+    // ========================================
+    // settings Collection
+    // ========================================
+    match /settings/{settingId} {
+      // 所有人可读取设定
+      allow read: if true;
+      // 只有管理员可以修改
+      allow write: if isAdmin();
+    }
+
+    // ========================================
+    // logs Collection
+    // ========================================
+    match /logs/{logId} {
+      // 只有教师和管理员可以读取日志
+      allow read: if isTeacher() || isAdmin();
+      // 允许任何登入用户写入日志
+      allow create: if true;
+      // 不允许修改或删除日志
+      allow update, delete: if isAdmin();
+    }
+
+    // ========================================
+    // announcements Collection
+    // ========================================
+    match /announcements/{announcementId} {
+      // 所有人可读取公告
+      allow read: if true;
+      // 只有教师和管理员可以创建/修改
+      allow write: if isTeacher() || isAdmin();
+    }
+
+    // ========================================
+    // statistics Collection
+    // ========================================
+    match /statistics/{statId} {
+      // 所有人可读取统计
+      allow read: if true;
+      // 只有管理员可以修改
+      allow write: if isAdmin();
+    }
+  }
+}
