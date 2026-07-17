@@ -1,0 +1,70 @@
+/**
+ * Star Photo Share System
+ * Theme CSS - 主题系统
+ * Version 1.0
+ * 2026-07-17
+ *
+ * 功能：深色/浅色主题切换，未来可扩展
+ */
+
+/* ========================================
+   深色主题（默认）
+   ======================================== */
+[data-theme="dark"],
+:root {
+  --theme-bg: var(--bg-deep-space);
+  --theme-surface: var(--bg-dark);
+  --theme-card: var(--glass-bg);
+  --theme-text: var(--text-primary);
+  --theme-text-secondary: var(--text-secondary);
+  --theme-border: var(--border-light);
+}
+
+/* ========================================
+   浅色主题（预留）
+   ======================================== */
+[data-theme="light"] {
+  --theme-bg: #F8FAFC;
+  --theme-surface: #FFFFFF;
+  --theme-card: rgba(255, 255, 255, 0.9);
+  --theme-text: #0F172A;
+  --theme-text-secondary: #475569;
+  --theme-border: rgba(0, 0, 0, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: 1px solid rgba(0, 0, 0, 0.1);
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-tertiary: #94A3B8;
+  --text-muted: #CBD5E1;
+  --bg-deep-space: #F8FAFC;
+  --bg-dark: #FFFFFF;
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-overlay: rgba(0, 0, 0, 0.3);
+  --border-light: rgba(0, 0, 0, 0.1);
+  --border-medium: rgba(0, 0, 0, 0.2);
+}
+
+/* ========================================
+   系统主题（跟随系统设置）
+   ======================================== */
+@media (prefers-color-scheme: light) {
+  [data-theme="system"] {
+    --theme-bg: #F8FAFC;
+    --theme-surface: #FFFFFF;
+    --theme-card: rgba(255, 255, 255, 0.9);
+    --theme-text: #0F172A;
+    --theme-text-secondary: #475569;
+    --theme-border: rgba(0, 0, 0, 0.1);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] {
+    --theme-bg: var(--bg-deep-space);
+    --theme-surface: var(--bg-dark);
+    --theme-card: var(--glass-bg);
+    --theme-text: var(--text-primary);
+    --theme-text-secondary: var(--text-secondary);
+    --theme-border: var(--border-light);
+  }
+}

@@ -1,0 +1,270 @@
+/**
+ * Star Photo Share System
+ * Student CSS - 学生上传页面样式
+ * Version 1.0
+ * 2026-07-17
+ *
+ * 功能：学生个人资料区、上传区域、预览、进度条等样式
+ */
+
+/* ========================================
+   学生页面容器
+   ======================================== */
+.student-page {
+  min-height: 100vh;
+  padding-top: var(--header-height);
+}
+
+/* ========================================
+   左侧面板 - 个人资料
+   ======================================== */
+.student-profile {
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-6));
+  height: fit-content;
+}
+
+.student-profile__avatar {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto var(--space-6);
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  box-shadow: var(--shadow-glow-blue);
+}
+
+.student-profile__name {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  margin-bottom: var(--space-2);
+}
+
+.student-profile__class {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  text-align: center;
+  margin-bottom: var(--space-2);
+}
+
+.student-profile__id {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  text-align: center;
+  font-family: var(--font-mono);
+  margin-bottom: var(--space-6);
+}
+
+.student-profile__status {
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+
+.student-profile__info {
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border-light);
+}
+
+.student-profile__info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  font-size: var(--font-size-sm);
+}
+
+.student-profile__info-label {
+  color: var(--text-muted);
+}
+
+.student-profile__info-value {
+  color: var(--text-secondary);
+}
+
+/* ========================================
+   右侧面板 - 上传区域
+   ======================================== */
+.student-upload {
+  padding-bottom: var(--space-16);
+}
+
+.student-upload__title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--space-8);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.student-upload__section {
+  margin-bottom: var(--space-8);
+}
+
+.student-upload__section-title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-4);
+  color: var(--text-secondary);
+}
+
+/* ========================================
+   图片预览区
+   ======================================== */
+.preview-area {
+  width: 100%;
+  min-height: 200px;
+  border: 2px dashed var(--border-light);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  transition: all var(--transition-normal);
+}
+
+.preview-area--has-image {
+  border-style: solid;
+  border-color: var(--border-medium);
+}
+
+.preview-area img {
+  width: 100%;
+  height: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+}
+
+.preview-area__placeholder {
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.preview-area__placeholder-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-4);
+  opacity: 0.5;
+}
+
+.preview-area__placeholder-text {
+  font-size: var(--font-size-sm);
+}
+
+.preview-area__remove {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--danger);
+  color: var(--text-primary);
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-size-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  z-index: 1;
+}
+
+.preview-area__remove:hover {
+  background: var(--danger-dark);
+  transform: scale(1.1);
+}
+
+/* ========================================
+   上传进度条
+   ======================================== */
+.upload-progress {
+  margin-top: var(--space-4);
+  display: none;
+}
+
+.upload-progress--active {
+  display: block;
+}
+
+.upload-progress__bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.upload-progress__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+.upload-progress__text {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+/* ========================================
+   操作按钮区
+   ======================================== */
+.student-actions {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border-light);
+}
+
+.student-actions .btn {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* ========================================
+   字符计数
+   ======================================== */
+.char-count {
+  text-align: right;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+.char-count--warning {
+  color: var(--warning);
+}
+
+.char-count--danger {
+  color: var(--danger);
+}
+
+/* ========================================
+   成功/空状态提示
+   ======================================== */
+.upload-success-message {
+  text-align: center;
+  padding: var(--space-10);
+}
+
+.upload-success-message__icon {
+  font-size: 64px;
+  margin-bottom: var(--space-4);
+}
+
+.upload-success-message__text {
+  font-size: var(--font-size-md);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-6);
+}

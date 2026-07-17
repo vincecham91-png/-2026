@@ -1,0 +1,229 @@
+/**
+ * Star Photo Share System
+ * Star CSS - 星空背景、流星、银河、星云动画
+ * Version 1.0
+ * 2026-07-17
+ *
+ * 功能：动态星空背景（Canvas）、流星动画、银河渐层、星云特效
+ */
+
+/* ========================================
+   星空背景容器
+   ======================================== */
+.star-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+  background: linear-gradient(
+    180deg,
+    var(--galaxy-deep) 0%,
+    var(--galaxy-blue) 40%,
+    var(--galaxy-purple) 70%,
+    var(--galaxy-deep) 100%
+  );
+  overflow: hidden;
+}
+
+/* ========================================
+   Canvas 星空层
+   ======================================== */
+#starCanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ========================================
+   银河渐层叠加
+   ======================================== */
+.galaxy-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(37, 99, 235, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 40%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(6, 182, 212, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 60%, rgba(37, 99, 235, 0.05) 0%, transparent 40%),
+    radial-gradient(ellipse at 20% 70%, rgba(124, 58, 237, 0.07) 0%, transparent 40%);
+  animation: nebulaMove 20s ease-in-out infinite;
+}
+
+/* ========================================
+   星云（Nebula）
+   ======================================== */
+.nebula {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.15;
+}
+
+.nebula--1 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, var(--primary), transparent);
+  top: 10%;
+  left: -10%;
+  animation: nebulaMove 25s ease-in-out infinite;
+}
+
+.nebula--2 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, var(--secondary), transparent);
+  top: 40%;
+  right: -10%;
+  animation: nebulaMove 30s ease-in-out infinite reverse;
+}
+
+.nebula--3 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, var(--accent), transparent);
+  bottom: 10%;
+  left: 40%;
+  animation: nebulaMove 22s ease-in-out infinite;
+}
+
+.nebula--4 {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, var(--star-yellow), transparent);
+  top: 60%;
+  left: 20%;
+  opacity: 0.08;
+  animation: nebulaMove 28s ease-in-out infinite reverse;
+}
+
+.nebula--5 {
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, var(--primary-light), transparent);
+  bottom: 20%;
+  right: 20%;
+  opacity: 0.1;
+  animation: nebulaMove 24s ease-in-out infinite;
+}
+
+/* ========================================
+   流星容器
+   ======================================== */
+.meteor-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ========================================
+   流星元素
+   ======================================== */
+.meteor {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: var(--text-primary);
+  border-radius: 50%;
+  animation: meteor 0.8s linear forwards;
+  z-index: 0;
+}
+
+.meteor::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 150px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+}
+
+/* 流星颜色变体 */
+.meteor--blue {
+  background: var(--primary-light);
+}
+
+.meteor--blue::before {
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.8),
+    rgba(59, 130, 246, 0.3),
+    transparent
+  );
+}
+
+.meteor--purple {
+  background: var(--secondary-light);
+}
+
+.meteor--purple::before {
+  background: linear-gradient(
+    90deg,
+    rgba(139, 92, 246, 0.8),
+    rgba(139, 92, 246, 0.3),
+    transparent
+  );
+}
+
+.meteor--cyan {
+  background: var(--accent-light);
+}
+
+.meteor--cyan::before {
+  background: linear-gradient(
+    90deg,
+    rgba(34, 211, 238, 0.8),
+    rgba(34, 211, 238, 0.3),
+    transparent
+  );
+}
+
+/* ========================================
+   CSS 星星（备用，主要用 Canvas）
+   ======================================== */
+.css-star {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: var(--text-primary);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.css-star--sm {
+  width: 1px;
+  height: 1px;
+}
+
+.css-star--lg {
+  width: 4px;
+  height: 4px;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+}
+
+.css-star--twinkle-1 { animation: twinkle 3s ease-in-out infinite; }
+.css-star--twinkle-2 { animation: twinkle2 4s ease-in-out infinite; }
+.css-star--twinkle-3 { animation: twinkle3 5s ease-in-out infinite; }

@@ -1,0 +1,410 @@
+/**
+ * Star Photo Share System
+ * Teacher CSS - 教师后台样式
+ * Version 1.0
+ * 2026-07-17
+ *
+ * 功能：教师 Dashboard、统计卡片、图表、学生表格、呈堂模式
+ */
+
+/* ========================================
+   Dashboard 头部
+   ======================================== */
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-8);
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.dashboard-header__title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.dashboard-header__actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+/* ========================================
+   统计卡片行
+   ======================================== */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+}
+
+/* 统计卡片颜色变体 */
+.stat-card--students .stat-card__icon { color: var(--primary-light); }
+.stat-card--completed .stat-card__icon { color: var(--success-light); }
+.stat-card--rate .stat-card__icon { color: var(--star-yellow); }
+.stat-card--incomplete .stat-card__icon { color: var(--warning-light); }
+
+/* ========================================
+   图表区域
+   ======================================== */
+.charts-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+}
+
+.chart-card {
+  padding: var(--space-6);
+}
+
+.chart-card__title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-6);
+  color: var(--text-secondary);
+}
+
+.chart-card canvas {
+  width: 100% !important;
+  max-height: 300px;
+}
+
+/* ========================================
+   班级完成率列表
+   ======================================== */
+.class-progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.class-progress-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--glass-bg);
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.class-progress-item:hover {
+  background: var(--glass-bg-hover);
+  transform: translateX(4px);
+}
+
+.class-progress-item__name {
+  font-weight: var(--font-weight-semibold);
+  min-width: 80px;
+  font-size: var(--font-size-sm);
+}
+
+.class-progress-item__count {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  min-width: 60px;
+}
+
+.class-progress-item__bar {
+  flex: 1;
+}
+
+.class-progress-item__rate {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  min-width: 40px;
+  text-align: right;
+}
+
+/* ========================================
+   筛选栏
+   ======================================== */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.filter-bar .search-box {
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-bar .select {
+  width: auto;
+  min-width: 140px;
+}
+
+/* ========================================
+   教师表格特有样式
+   ======================================== */
+.teacher-table {
+  margin-bottom: var(--space-8);
+}
+
+.teacher-table .table td:last-child {
+  white-space: nowrap;
+}
+
+.table-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: all var(--transition-fast);
+  margin: 0 2px;
+}
+
+.table-action-btn:hover {
+  background: var(--primary);
+  color: var(--text-primary);
+  border-color: var(--primary);
+}
+
+/* ========================================
+   教师 Modal 中作品展示
+   ======================================== */
+.work-preview {
+  text-align: center;
+}
+
+.work-preview__image {
+  max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-6);
+}
+
+.work-preview__info {
+  text-align: left;
+  margin-top: var(--space-6);
+}
+
+.work-preview__info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: var(--font-size-sm);
+}
+
+.work-preview__info-label {
+  color: var(--text-muted);
+}
+
+.work-preview__info-value {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ========================================
+   未完成名单
+   ======================================== */
+.incomplete-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.incomplete-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: var(--font-size-sm);
+}
+
+.incomplete-list__student {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.incomplete-list__class {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  padding: var(--space-1) var(--space-2);
+  background: var(--glass-bg);
+  border-radius: var(--radius-sm);
+}
+
+.incomplete-list__remind-btn {
+  font-size: var(--font-size-xs);
+  padding: var(--space-1) var(--space-3);
+  background: var(--glass-bg);
+  border: 1px solid var(--border-light);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+/* ========================================
+   教师呈堂模式控制
+   ======================================== */
+.present-controls {
+  position: fixed;
+  bottom: var(--space-10);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--space-4);
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-light);
+}
+
+.present-controls__btn {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.present-controls__btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ========================================
+   下载按钮
+   ======================================== */
+.download-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.download-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: var(--space-2);
+  background: var(--bg-modal);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+  min-width: 160px;
+  z-index: var(--z-dropdown);
+  display: none;
+  box-shadow: var(--shadow-card);
+}
+
+.download-menu--open {
+  display: block;
+  animation: fadeIn 0.2s ease;
+}
+
+.download-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+.download-menu__item:hover {
+  background: var(--glass-bg);
+  color: var(--text-primary);
+}
+
+/* ========================================
+   今日统计
+   ======================================== */
+.today-stats {
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  background: var(--glass-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+}
+
+.today-stats__item {
+  flex: 1;
+  text-align: center;
+}
+
+.today-stats__number {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.today-stats__label {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+/* ========================================
+   教师 Modal 导航
+   ======================================== */
+.modal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  margin-top: var(--space-4);
+}
+
+.modal-nav__btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--glass-bg);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.modal-nav__btn:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--primary);
+}
+
+.modal-nav__counter {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}

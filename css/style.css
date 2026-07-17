@@ -1,0 +1,297 @@
+/**
+ * Star Photo Share System
+ * Style CSS - 首页样式
+ * Version 1.0
+ * 2026-07-17
+ *
+ * 功能：星空首页 Hero、班级星球、完成率等样式
+ */
+
+/* ========================================
+   Hero 区段
+   ======================================== */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-8);
+  position: relative;
+}
+
+.hero__stars {
+  font-size: var(--font-size-xl);
+  letter-spacing: 8px;
+  color: var(--star-yellow);
+  margin-bottom: var(--space-6);
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+.hero__title {
+  font-size: var(--font-size-5xl);
+  font-weight: var(--font-weight-bold);
+  background: linear-gradient(135deg, var(--star-yellow), var(--primary-light), var(--secondary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: var(--space-4);
+  line-height: 1.2;
+}
+
+.hero__subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+  font-weight: var(--font-weight-regular);
+}
+
+.hero__tagline {
+  font-size: var(--font-size-md);
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-10);
+  font-style: italic;
+}
+
+.hero__cta {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.hero__scroll-hint {
+  position: absolute;
+  bottom: var(--space-10);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  animation: float 2s ease-in-out infinite;
+  cursor: pointer;
+}
+
+.hero__scroll-arrow {
+  font-size: var(--font-size-xl);
+}
+
+/* ========================================
+   Class Galaxy 区段
+   ======================================== */
+.class-galaxy {
+  padding: var(--space-20) var(--space-6);
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.class-galaxy__title {
+  text-align: center;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--space-4);
+  color: var(--text-primary);
+}
+
+.class-galaxy__subtitle {
+  text-align: center;
+  font-size: var(--font-size-md);
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-12);
+}
+
+/* ========================================
+   星球网格
+   ======================================== */
+.planet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-8);
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: var(--space-6);
+}
+
+/* ========================================
+   星球卡片
+   ======================================== */
+.planet-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-8) var(--space-6);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  position: relative;
+}
+
+.planet-card:hover {
+  transform: translateY(-6px) rotate(2deg);
+}
+
+.planet-card:hover .planet-card__glow {
+  opacity: 1;
+}
+
+.planet-card:active {
+  transform: scale(0.95);
+}
+
+/* 星球本体 */
+.planet-card__sphere {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  position: relative;
+  margin-bottom: var(--space-6);
+  transition: all var(--transition-normal);
+}
+
+.planet-card:hover .planet-card__sphere {
+  transform: scale(1.1);
+}
+
+/* 星球发光 */
+.planet-card__glow {
+  position: absolute;
+  inset: -20px;
+  border-radius: 50%;
+  opacity: 0.5;
+  transition: all var(--transition-normal);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* 不同星球的颜色 */
+.planet--blue .planet-card__sphere {
+  background: radial-gradient(circle at 35% 35%, #60A5FA, #2563EB, #1E3A5F);
+  box-shadow: 0 0 40px rgba(37, 99, 235, 0.5), inset 0 -10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.planet--blue .planet-card__glow {
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.4), transparent);
+}
+
+.planet--purple .planet-card__sphere {
+  background: radial-gradient(circle at 35% 35%, #A78BFA, #7C3AED, #3B1F6E);
+  box-shadow: 0 0 40px rgba(124, 58, 237, 0.5), inset 0 -10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.planet--purple .planet-card__glow {
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.4), transparent);
+}
+
+.planet--cyan .planet-card__sphere {
+  background: radial-gradient(circle at 35% 35%, #67E8F9, #06B6D4, #164E63);
+  box-shadow: 0 0 40px rgba(6, 182, 212, 0.5), inset 0 -10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.planet--cyan .planet-card__glow {
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.4), transparent);
+}
+
+.planet--gold .planet-card__sphere {
+  background: radial-gradient(circle at 35% 35%, #FDE68A, #F59E0B, #78350F);
+  box-shadow: 0 0 40px rgba(245, 158, 11, 0.5), inset 0 -10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.planet--gold .planet-card__glow {
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.4), transparent);
+}
+
+.planet--green .planet-card__sphere {
+  background: radial-gradient(circle at 35% 35%, #86EFAC, #22C55E, #14532D);
+  box-shadow: 0 0 40px rgba(34, 197, 94, 0.5), inset 0 -10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.planet--green .planet-card__glow {
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.4), transparent);
+}
+
+/* 星球光环 */
+.planet-card__ring {
+  position: absolute;
+  width: 180px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotateX(75deg);
+  pointer-events: none;
+}
+
+/* 星球信息 */
+.planet-card__name {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+  text-align: center;
+}
+
+.planet-card__progress-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.planet-card__stars {
+  font-size: var(--font-size-lg);
+  letter-spacing: 4px;
+  color: var(--star-yellow);
+  margin-bottom: var(--space-4);
+}
+
+/* 完成率进度条 */
+.planet-card__progress {
+  width: 100%;
+  max-width: 180px;
+}
+
+/* ========================================
+   关于系统区段
+   ======================================== */
+.about-section {
+  padding: var(--space-16) var(--space-6);
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.about-section__title {
+  font-size: var(--font-size-2xl);
+  margin-bottom: var(--space-6);
+}
+
+.about-section__features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-6);
+  margin-top: var(--space-8);
+}
+
+.feature-item {
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.feature-item__icon {
+  font-size: var(--font-size-3xl);
+  margin-bottom: var(--space-4);
+}
+
+.feature-item__title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-2);
+}
+
+.feature-item__text {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+}

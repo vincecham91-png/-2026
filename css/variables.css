@@ -1,0 +1,176 @@
+/**
+ * Star Photo Share System
+ * CSS Variables - 设计系统变量
+ * Version 1.0
+ * 2026-07-17
+ *
+ * 功能：定义全局 CSS 变量，统一整个系统的颜色、字体、间距、圆角、阴影等
+ * 所有页面必须引用此文件
+ */
+
+/* ========================================
+   CSS 变量定义
+   ======================================== */
+:root {
+  /* ---------- 颜色系统 ---------- */
+
+  /* 主色调 */
+  --primary: #2563EB;
+  --primary-rgb: 37, 99, 235;
+  --primary-light: #3B82F6;
+  --primary-dark: #1D4ED8;
+
+  /* 次要色 */
+  --secondary: #7C3AED;
+  --secondary-rgb: 124, 58, 237;
+  --secondary-light: #8B5CF6;
+  --secondary-dark: #6D28D9;
+
+  /* 强调色 */
+  --accent: #06B6D4;
+  --accent-rgb: 6, 182, 212;
+  --accent-light: #22D3EE;
+  --accent-dark: #0891B2;
+
+  /* 星金色 */
+  --star-yellow: #FFD54F;
+  --star-yellow-rgb: 255, 213, 79;
+
+  /* 语义色 */
+  --success: #22C55E;
+  --success-rgb: 34, 197, 94;
+  --success-light: #4ADE80;
+  --success-dark: #16A34A;
+
+  --warning: #F59E0B;
+  --warning-rgb: 245, 158, 11;
+  --warning-light: #FBBF24;
+  --warning-dark: #D97706;
+
+  --danger: #EF4444;
+  --danger-rgb: 239, 68, 68;
+  --danger-light: #F87171;
+  --danger-dark: #DC2626;
+
+  --info: #3B82F6;
+  --info-rgb: 59, 130, 246;
+
+  /* 背景色系 */
+  --bg-deep-space: #050816;
+  --bg-dark: #0F172A;
+  --bg-card: rgba(255, 255, 255, 0.08);
+  --bg-card-hover: rgba(255, 255, 255, 0.12);
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+  --bg-modal: rgba(15, 23, 42, 0.95);
+
+  /* 边框色 */
+  --border-light: rgba(255, 255, 255, 0.15);
+  --border-medium: rgba(255, 255, 255, 0.25);
+  --border-strong: rgba(255, 255, 255, 0.4);
+
+  /* 文字色 */
+  --text-primary: #FFFFFF;
+  --text-secondary: rgba(255, 255, 255, 0.85);
+  --text-tertiary: rgba(255, 255, 255, 0.6);
+  --text-muted: rgba(255, 255, 255, 0.4);
+  --text-inverse: #0F172A;
+
+  /* 银河色系 */
+  --galaxy-blue: #111a3c;
+  --galaxy-purple: #1e1b4b;
+  --galaxy-deep: #050816;
+  --nebula-blue: rgba(37, 99, 235, 0.15);
+  --nebula-purple: rgba(124, 58, 237, 0.15);
+  --nebula-cyan: rgba(6, 182, 212, 0.15);
+
+  /* ---------- 字体系统 ---------- */
+
+  --font-zh: 'Noto Sans TC', 'Noto Sans SC', 'Microsoft JhengHei', sans-serif;
+  --font-en: 'Inter', 'Roboto', 'Arial', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-md: 18px;
+  --font-size-lg: 20px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 30px;
+  --font-size-3xl: 36px;
+  --font-size-4xl: 48px;
+  --font-size-5xl: 64px;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ---------- 间距系统 (8pt Grid) ---------- */
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ---------- 圆角 ---------- */
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-full: 999px;
+
+  /* ---------- 阴影 ---------- */
+
+  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.2);
+  --shadow-hover: 0 20px 50px rgba(37, 99, 235, 0.4);
+  --shadow-modal: 0 40px 80px rgba(0, 0, 0, 0.6);
+  --shadow-glow-blue: 0 0 20px rgba(37, 99, 235, 0.5);
+  --shadow-glow-purple: 0 0 20px rgba(124, 58, 237, 0.5);
+  --shadow-glow-success: 0 0 20px rgba(34, 197, 94, 0.5);
+
+  /* ---------- 玻璃拟态 ---------- */
+
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(20px);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.15);
+  --glass-bg-hover: rgba(255, 255, 255, 0.12);
+
+  /* ---------- 动画 ---------- */
+
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  --transition-glow: 0.3s ease-in-out;
+
+  /* ---------- 布局 ---------- */
+
+  --header-height: 80px;
+  --footer-height: 60px;
+  --sidebar-width: 280px;
+  --max-width: 1440px;
+  --content-width: 1280px;
+
+  /* ---------- Z-Index ---------- */
+
+  --z-base: 1;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+}
