@@ -671,6 +671,17 @@
         "status":  "active"
     },
     {
+        "studentId":  "26107",
+        "name":  "林家泽",
+        "class":  "初二孝",
+        "password":  "26107",
+        "completed":  false,
+        "photoURL":  "",
+        "photoLink":  "",
+        "reason":  "",
+        "status":  "active"
+    },
+    {
         "studentId":  "25089",
         "name":  "周燕欣",
         "class":  "初二仁",
