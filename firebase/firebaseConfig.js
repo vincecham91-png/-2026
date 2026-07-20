@@ -10,6 +10,7 @@
 
 // ========================================
 // Firebase 配置
+// （设为 null 表示使用本地模式，不连接 Firebase）
 // ========================================
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
@@ -22,42 +23,43 @@ const firebaseConfig = {
 };
 
 // ========================================
-// 初始化 Firebase
+// 判断是否配置了真实 Firebase
 // ========================================
-let firebaseApp;
-let firestoreDB;
-let firebaseStorage;
-let firebaseAuth;
+const IS_FIREBASE_CONFIGURED =
+  firebaseConfig.apiKey !== 'YOUR_API_KEY' &&
+  firebaseConfig.projectId !== 'YOUR_PROJECT_ID';
 
-try {
-  // 初始化 Firebase App
-  firebaseApp = firebase.initializeApp(firebaseConfig);
+// ========================================
+// 初始化 Firebase（仅在已配置时）
+// ========================================
+let firebaseApp = null;
+let firestoreDB = null;
+let firebaseStorage = null;
+let firebaseAuth = null;
 
-  // 初始化 Firestore
-  firestoreDB = firebase.firestore();
+if (IS_FIREBASE_CONFIGURED && typeof firebase !== 'undefined') {
+  try {
+    firebaseApp = firebase.initializeApp(firebaseConfig);
+    firestoreDB = firebase.firestore();
+    firebaseStorage = firebase.storage();
+    firebaseAuth = firebase.auth();
 
-  // 初始化 Storage
-  firebaseStorage = firebase.storage();
+    firestoreDB.enablePersistence({ synchronizeTabs: true })
+      .then(() => console.log('[Firebase] 离线缓存已启用'))
+      .catch((err) => {
+        if (err.code === 'failed-precondition') {
+          console.warn('[Firebase] 多标签离线缓存跳过');
+        } else if (err.code === 'unimplemented') {
+          console.warn('[Firebase] 浏览器不支持离线缓存');
+        }
+      });
 
-  // 初始化 Authentication
-  firebaseAuth = firebase.auth();
-
-  // 开启 Firestore 离线缓存（可选）
-  firestoreDB.enablePersistence({ synchronizeTabs: true })
-    .then(() => {
-      console.log('[Firebase] 离线缓存已启用');
-    })
-    .catch((err) => {
-      if (err.code === 'failed-precondition') {
-        console.warn('[Firebase] 多个标签页开启，离线缓存无法启用');
-      } else if (err.code === 'unimplemented') {
-        console.warn('[Firebase] 浏览器不支持离线缓存');
-      }
-    });
-
-  console.log('[Firebase] 初始化成功');
-} catch (error) {
-  console.error('[Firebase] 初始化失败:', error);
+    console.log('[Firebase] 初始化成功');
+  } catch (error) {
+    console.warn('[Firebase] 初始化失败，使用本地模式:', error.message);
+  }
+} else {
+  console.log('[Firebase] 未配置，使用本地数据模式');
 }
 
 // ========================================

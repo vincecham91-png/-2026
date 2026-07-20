@@ -22,32 +22,23 @@ window.SPSS = window.SPSS || {};
  * @returns {firebase.firestore.Firestore}
  */
 function getFirestore() {
-  if (!window.SPSS.firestoreDB) {
-    throw new Error('Firestore 未初始化，请先加载 firebaseConfig.js');
-  }
-  return window.SPSS.firestoreDB;
+  return window.SPSS.firestoreDB || null;
 }
 
 /**
  * 获取 Storage 实例
- * @returns {firebase.storage.Storage}
+ * @returns {firebase.storage.Storage|null}
  */
 function getStorage() {
-  if (!window.SPSS.firebaseStorage) {
-    throw new Error('Storage 未初始化，请先加载 firebaseConfig.js');
-  }
-  return window.SPSS.firebaseStorage;
+  return window.SPSS.firebaseStorage || null;
 }
 
 /**
  * 获取 Auth 实例
- * @returns {firebase.auth.Auth}
+ * @returns {firebase.auth.Auth|null}
  */
 function getAuth() {
-  if (!window.SPSS.firebaseAuth) {
-    throw new Error('Auth 未初始化，请先加载 firebaseConfig.js');
-  }
-  return window.SPSS.firebaseAuth;
+  return window.SPSS.firebaseAuth || null;
 }
 
 // ========================================
@@ -500,6 +491,11 @@ async function searchStudents(query) {
 async function uploadImage(file, className, studentId, onProgress) {
   try {
     const storage = getStorage();
+    if (!storage) {
+      console.warn('[Storage] Firebase 未配置，跳过云端上传');
+      // 返回本地 blob URL 作为降级方案
+      return URL.createObjectURL(file);
+    }
     const extension = file.name.split('.').pop().toLowerCase();
     const fileName = `photo.${extension}`;
     const path = `images/${className}/${studentId}/${fileName}`;
