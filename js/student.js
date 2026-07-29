@@ -31,14 +31,12 @@
       return;
     }
 
-    // 加载个人资料
-    await loadProfile();
-
-    // 加载已有作品
-    await loadExistingWork();
-
-    // 绑定事件
+    // 先綁定事件，確保頁面立即可互動（不等待 Firebase）
     bindEvents();
+
+    // 再載入資料（Firebase 查詢不阻塞 UI）
+    await loadProfile();
+    await loadExistingWork();
 
     console.log('[Student] 上传页面初始化完成');
   }

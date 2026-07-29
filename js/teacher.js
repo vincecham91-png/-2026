@@ -34,7 +34,10 @@
     const hasPermission = await checkPermission();
     if (!hasPermission) return;
 
-    // 加载数据
+    // 先綁定事件，確保 UI 立即可互動
+    bindEvents();
+
+    // 加载数据（不阻塞 UI）
     await Promise.all([
       loadDashboardStats(),
       loadClassStats(),
@@ -48,9 +51,6 @@
     // 渲染
     renderCharts();
     renderStudentsTable(filteredStudents);
-
-    // 绑定事件
-    bindEvents();
 
     console.log('[Teacher] 教师后台初始化完成，已完成學生:', filteredStudents.filter(function(s){return s.completed||s.photoURL||s.photoLink;}).length);
   }

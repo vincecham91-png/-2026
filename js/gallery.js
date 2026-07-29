@@ -32,14 +32,12 @@
     // 读取 URL 参数中的班级
     currentClass = S.getURLParam && S.getURLParam('class') || '';
 
-    // 加载班级列表
-    await loadClassFilter();
-
-    // 加载作品
-    await loadWorks();
-
-    // 绑定事件
+    // 先綁定事件，確保頁面立即可互動
     bindEvents();
+
+    // 再載入資料
+    await loadClassFilter();
+    await loadWorks();
 
     console.log('[Gallery] 作品展示初始化完成');
   }
