@@ -28,7 +28,7 @@
 
   <main class="login-page" role="main">
     <div class="login-card glass-card teacher-login-card">
-      <div class="login-card__logo">👩‍�?/div>
+      <div class="login-card__logo">👩‍🏫</div>
       <h1 class="login-card__title">教师登入</h1>
       <p class="login-card__subtitle">使用 Firebase 认证帐号登入</p>
 
@@ -38,7 +38,7 @@
       <!-- 登入表单 -->
       <form class="login-form" novalidate>
         <div class="form-group">
-          <label class="form-label" for="emailInput">用户�?/ Email</label>
+          <label class="form-label" for="emailInput">用户名 / Email</label>
           <input
             type="text"
             id="emailInput"
@@ -56,7 +56,7 @@
             type="password"
             id="passwordInput"
             class="input"
-            placeholder="请输入密�?
+            placeholder="请输入密码"
             autocomplete="current-password"
             required
             aria-required="true"
@@ -68,13 +68,13 @@
         </button>
       </form>
 
-      <div class="login-divider">�?/div>
+      <div class="login-divider">或</div>
 
       <p class="login-teacher-link">
-        我是学生�?a href="login.html">前往学生登入</a>
+        我是学生？<a href="login.html">前往学生登入</a>
       </p>
 
-      <a href="index.html" class="login-back">�?返回首页</a>
+      <a href="index.html" class="login-back">← 返回首页</a>
     </div>
   </main>
 
@@ -110,19 +110,20 @@
         var errorDiv = document.getElementById('loginError');
         if(errorDiv) errorDiv.classList.remove('login-error--visible');
 
-        if(!username){ showError('请输入用户名�?Email'); return; }
-        if(!password){ showError('请输入密�?); return; }
+        if(!username){ showError('请输入用户名或 Email'); return; }
+        if(!password){ showError('请输入密码'); return; }
 
         var btn = document.getElementById('loginBtn');
         btn.classList.add('btn--loading');
         btn.disabled = true;
-        btn.textContent = '登入�?..';
+        btn.textContent = '登入中...';
 
         try {
           var teacher = null;
           var cfg = S.TEACHER_CONFIG;
 
-          // 1. 先尝试本地教师帐�?          if (cfg && cfg.password === password &&
+          // 1. 先尝试本地教师帐号
+          if (cfg && cfg.password === password &&
               (username === cfg.username || username === cfg.email)) {
             teacher = {
               uid: 'local-teacher-001',
@@ -142,7 +143,7 @@
             }
           }
 
-          // 3. 降级：直�?Firebase Auth
+          // 3. 降级：直接 Firebase Auth
           if (!teacher && firebase.auth) {
             try {
               var userCredential = await firebase.auth().signInWithEmailAndPassword(username, password);
@@ -155,15 +156,15 @@
           if(teacher){
             S.saveSession && S.saveSession('teacherSession', teacher);
             if(S.addLog){ try { await S.addLog('login', teacher.uid||username, '教师登入'); } catch(e){} }
-            S.showToast && S.showToast('登入成功！欢�?' + (teacher.name||teacher.email||''), 'success');
+            S.showToast && S.showToast('登入成功！欢迎 ' + (teacher.name||teacher.email||''), 'success');
             setTimeout(function(){ window.location.href = 'teacher.html'; }, 500);
           } else {
-            showError('帐号或密码错�?);
+            showError('帐号或密码错误');
             if(btn){ btn.style.animation='none'; btn.offsetHeight; btn.style.animation='shake 0.5s ease'; }
           }
         } catch(err){
           console.error('[TeacherLogin] 登入失败:', err);
-          showError('登入失败�? + (err.message||'请稍后再�?));
+          showError('登入失败：' + (err.message||'请稍后再试'));
           if(btn){ btn.style.animation='none'; btn.offsetHeight; btn.style.animation='shake 0.5s ease'; }
         } finally {
           btn.classList.remove('btn--loading');

@@ -152,50 +152,6 @@
   <script src="js/student.js?v=3"></script>
   <!-- Compressor.js（CDN） -->
   <script src="https://cdn.jsdelivr.net/npm/compressorjs@1.2.1/dist/compressor.min.js"></script>
-  <!-- 🔧 診斷面板 -->
-  <div id="debugPanel" style="position:fixed;bottom:0;right:0;background:rgba(0,0,0,0.9);color:#0f0;padding:8px 12px;font:11px monospace;z-index:99999;border-radius:4px 0 0 0;max-width:350px;display:none">
-    <div style="cursor:pointer" onclick="this.parentElement.style.display='none'">✕ 关闭</div>
-    <div id="debugContent"></div>
-  </div>
-  <script>
-    // 診斷工具：Ctrl+Shift+D 顯示/隱藏
-    window._diag = function(msg) {
-      var panel = document.getElementById('debugPanel');
-      var content = document.getElementById('debugContent');
-      if (!panel || !content) return;
-      panel.style.display = 'block';
-      content.innerHTML += '<div>' + new Date().toLocaleTimeString() + ' ' + msg + '</div>';
-      console.log('[DIAG]', msg);
-    };
-    document.addEventListener('keydown', function(e) {
-      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-        var p = document.getElementById('debugPanel');
-        if (p) p.style.display = p.style.display === 'none' ? 'block' : 'none';
-      }
-    });
-    // 自動診斷
-    window.addEventListener('load', function() {
-      setTimeout(function() {
-        try {
-          var testKey = '_diag_test';
-          localStorage.setItem(testKey, 'ok');
-          var val = localStorage.getItem(testKey);
-          localStorage.removeItem(testKey);
-          window._diag('✅ localStorage 可讀寫');
-          window._diag('Firebase: ' + (window.SPSS && window.SPSS.firestoreDB ? '已連線' : '離線模式'));
-          var si = localStorage.getItem('spss_works_index');
-          var works = si ? JSON.parse(si).length : 0;
-          var ss = localStorage.getItem('spss_student_status');
-          var completed = 0;
-          if (ss) { var map = JSON.parse(ss); Object.keys(map).forEach(function(k) { if (map[k].completed) completed++; }); }
-          window._diag('作品: ' + works + '件, 已完成: ' + completed + '人');
-          window._diag('Session: ' + (sessionStorage.getItem('studentSession') ? '✅ 已登入' : '❌ 未登入'));
-        } catch(e) {
-          window._diag('❌ localStorage 錯誤: ' + e.message);
-        }
-      }, 1000);
-    });
-  </script>
   <!-- 星空背景 -->
   <script>
     (function(){
