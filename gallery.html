@@ -40,7 +40,7 @@
   <main class="gallery-page" role="main">
     <!-- 页面头部 -->
     <div class="gallery-page__header">
-      <h1 class="gallery-page__title">🖼�?班级作品展示</h1>
+      <h1 class="gallery-page__title">🖼�?班级作品展示</h1>
       <div class="gallery-toolbar">
         <!-- 班级选择 -->
         <select id="galleryClassSelect" class="select" aria-label="选择班级">
@@ -49,9 +49,9 @@
 
         <!-- 排序 -->
         <select id="gallerySort" class="select" aria-label="排序方式" style="min-width:120px">
-          <option value="name">按姓�?/option>
-          <option value="time">按时�?/option>
-          <option value="status">按状�?/option>
+          <option value="name">按姓�?/option>
+          <option value="time">按时�?/option>
+          <option value="status">按状�?/option>
         </select>
 
         <!-- 搜索 -->
@@ -85,11 +85,7 @@
   </footer>
 
   <!-- JavaScript -->
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <!-- Gallery 使用 localStorage 本地儲存，無需 Firebase SDK -->
   <script src="firebase/firebaseConfig.js?v=3"></script>
   <script src="js/util.js?v=3"></script>
   <script src="js/firebase.js?v=3"></script>
