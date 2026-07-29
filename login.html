@@ -91,7 +91,7 @@
     }
     .name-grid::-webkit-scrollbar { width: 4px; }
     .name-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
-    /* 选中的学生信息 */
+    /* 选中的学生信�?*/
     .selected-student-info {
       display: none;
       text-align: center;
@@ -130,40 +130,40 @@
       <form class="login-form" autocomplete="off" novalidate>
         <!-- 步骤1：选择班级 -->
         <div class="form-group">
-          <label class="form-label">① 选择班级</label>
+          <label class="form-label">�?选择班级</label>
           <div class="class-tabs" id="classTabs">
-            <span style="color:var(--text-muted);font-size:var(--font-size-sm)">加载中...</span>
+            <span style="color:var(--text-muted);font-size:var(--font-size-sm)">加载�?..</span>
           </div>
         </div>
 
-        <!-- 步骤2：点击名字 -->
+        <!-- 步骤2：点击名�?-->
         <div class="form-group">
-          <label class="form-label">② 点击你的名字</label>
+          <label class="form-label">�?点击你的名字</label>
           <div class="name-grid" id="nameGrid">
-            <span style="color:var(--text-muted);font-size:var(--font-size-sm);grid-column:1/-1;text-align:center;padding:20px">↑ 请先选择班级</span>
+            <span style="color:var(--text-muted);font-size:var(--font-size-sm);grid-column:1/-1;text-align:center;padding:20px">�?请先选择班级</span>
           </div>
         </div>
 
-        <!-- 已选学生 -->
+        <!-- 已选学�?-->
         <div class="selected-student-info" id="selectedStudentInfo">
           <div class="selected-student-name" id="selectedName"></div>
           <div class="selected-student-id" id="selectedId"></div>
         </div>
 
-        <!-- 步骤3：输入学号 -->
+        <!-- 步骤3：输入学�?-->
         <div class="form-group">
-          <label class="form-label" for="passwordInput">③ 输入学号（密码）</label>
+          <label class="form-label" for="passwordInput">�?输入学号（密码）</label>
           <input
             type="password"
             id="passwordInput"
             class="input"
-            placeholder="请输入你的学号"
+            placeholder="请输入你的学�?
             maxlength="10"
             autocomplete="off"
             required
             aria-required="true"
           >
-          <p class="form-hint">密码为你的学号</p>
+          <p class="form-hint">密码为你的学�?/p>
         </div>
 
         <!-- 记住班级 -->
@@ -179,17 +179,17 @@
         </button>
       </form>
 
-      <div class="login-divider">或</div>
-      <p class="login-teacher-link">我是老师？<a href="teacher-login.html">前往教师登入</a></p>
-      <a href="index.html" class="login-back" id="backHomeBtn">← 返回首页</a>
+      <div class="login-divider">�?/div>
+      <p class="login-teacher-link">我是老师�?a href="teacher-login.html">前往教师登入</a></p>
+      <a href="index.html" class="login-back" id="backHomeBtn">�?返回首页</a>
     </div>
   </main>
 
   <!-- 登入頁面僅使用本地驗證，無需載入 Firebase SDK -->
-  <script src="firebase/firebaseConfig.js?v=2"></script>
-  <script src="js/util.js?v=2"></script>
-  <script src="js/firebase.js?v=2"></script>
-  <script src="js/login.js?v=2"></script>
+  <script src="firebase/firebaseConfig.js?v=3"></script>
+  <script src="js/util.js?v=3"></script>
+  <script src="js/firebase.js?v=3"></script>
+  <script src="js/login.js?v=3"></script>
   <script>
     (function(){
       var c=document.getElementById('starCanvas');

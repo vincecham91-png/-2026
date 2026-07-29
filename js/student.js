@@ -447,6 +447,14 @@
         statusEl.innerHTML = '<span class="badge badge--success">✅ 已完成</span>';
       }
 
+      // 診斷：驗證儲存結果
+      if (window._diag) {
+        window._diag('💾 儲存完成 - photoURL:' + (photoURL ? (photoURL.substring(0,20)+'...') : '無') + ' link:' + (photoLink || '無'));
+        var verifyWork = localStorage.getItem('spss_work_' + currentStudent.studentId);
+        var verifyStatus = localStorage.getItem('spss_student_status');
+        window._diag('🔍 驗證: work=' + (verifyWork ? '✅' : '❌') + ' status=' + (verifyStatus ? '✅' : '❌'));
+      }
+
       // 隐藏进度条
       if (progressBar) {
         setTimeout(() => {

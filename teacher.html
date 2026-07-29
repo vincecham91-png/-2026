@@ -31,15 +31,15 @@
     <aside class="sidebar" role="navigation" aria-label="教师后台导航">
       <div class="sidebar__logo">🌟 教师后台</div>
       <nav class="sidebar__nav">
-        <a class="sidebar__link sidebar__link--active" data-section="dashboard" href="#dashboard">📊 仪表板</a>
+        <a class="sidebar__link sidebar__link--active" data-section="dashboard" href="#dashboard">📊 仪表�?/a>
         <a class="sidebar__link" data-section="classes" href="#classes">🪐 班级统计</a>
-        <a class="sidebar__link" data-section="students" href="#students">👨‍🎓 学生管理</a>
-        <a class="sidebar__link" data-section="gallery" href="#gallery">🖼️ 作品浏览</a>
-        <a class="sidebar__link" data-section="incomplete" href="#incomplete">⚠️ 未完成名单</a>
+        <a class="sidebar__link" data-section="students" href="#students">👨‍�?学生管理</a>
+        <a class="sidebar__link" data-section="gallery" href="#gallery">🖼�?作品浏览</a>
+        <a class="sidebar__link" data-section="incomplete" href="#incomplete">⚠️ 未完成名�?/a>
       </nav>
       <div class="sidebar__footer">
         <div class="sidebar__user">
-          <div class="sidebar__user-avatar">👩‍🏫</div>
+          <div class="sidebar__user-avatar">👩‍�?/div>
           <div>
             <div class="sidebar__user-name" id="teacherName">教师</div>
             <div class="sidebar__user-role" id="teacherRole">teacher</div>
@@ -64,31 +64,31 @@
         <!-- 统计卡片 -->
         <div class="stats-row">
           <div class="stat-card stat-card--students">
-            <div class="stat-card__icon">👨‍🎓</div>
+            <div class="stat-card__icon">👨‍�?/div>
             <div class="stat-card__number" id="statTotalStudents">0</div>
-            <div class="stat-card__label">总学生人数</div>
+            <div class="stat-card__label">总学生人�?/div>
           </div>
           <div class="stat-card stat-card--completed">
-            <div class="stat-card__icon">✅</div>
+            <div class="stat-card__icon">�?/div>
             <div class="stat-card__number" id="statCompleted">0</div>
-            <div class="stat-card__label">已完成人数</div>
+            <div class="stat-card__label">已完成人�?/div>
           </div>
           <div class="stat-card stat-card--rate">
             <div class="stat-card__icon">📈</div>
             <div class="stat-card__number" id="statRate">0%</div>
-            <div class="stat-card__label">完成率</div>
+            <div class="stat-card__label">完成�?/div>
           </div>
           <div class="stat-card stat-card--incomplete">
             <div class="stat-card__icon">⚠️</div>
             <div class="stat-card__number" id="statIncomplete">0</div>
-            <div class="stat-card__label">未完成人数</div>
+            <div class="stat-card__label">未完成人�?/div>
           </div>
         </div>
 
-        <!-- 图表区 -->
+        <!-- 图表�?-->
         <div class="charts-row">
           <div class="chart-card glass-card">
-            <h3 class="chart-card__title">完成率分布</h3>
+            <h3 class="chart-card__title">完成率分�?/h3>
             <canvas id="completionChart"></canvas>
           </div>
           <div class="chart-card glass-card">
@@ -101,17 +101,17 @@
       <!-- 班级统计区段 -->
       <section class="dashboard-section" id="section-classes" style="display:none">
         <div class="dashboard-header">
-          <h2 class="dashboard-header__title">🪐 班级完成率</h2>
+          <h2 class="dashboard-header__title">🪐 班级完成�?/h2>
         </div>
         <div class="class-progress-list" id="classProgressList">
-          <p style="color:var(--text-muted);text-align:center">加载中...</p>
+          <p style="color:var(--text-muted);text-align:center">加载�?..</p>
         </div>
       </section>
 
       <!-- 学生管理区段 -->
       <section class="dashboard-section" id="section-students">
         <div class="dashboard-header">
-          <h2 class="dashboard-header__title">👨‍🎓 学生管理</h2>
+          <h2 class="dashboard-header__title">👨‍�?学生管理</h2>
         </div>
 
         <div class="filter-bar">
@@ -119,10 +119,10 @@
             <span class="search-box__icon" aria-hidden="true">🔍</span>
             <input type="text" id="teacherSearch" class="input" placeholder="搜索姓名、学号或班级..." aria-label="搜索学生">
           </div>
-          <select id="statusFilter" class="select" style="min-width:140px" aria-label="状态筛选">
-            <option value="all">全部状态</option>
-            <option value="completed">已完成</option>
-            <option value="incomplete">未完成</option>
+          <select id="statusFilter" class="select" style="min-width:140px" aria-label="状态筛�?>
+            <option value="all">全部状�?/option>
+            <option value="completed">已完�?/option>
+            <option value="incomplete">未完�?/option>
           </select>
         </div>
 
@@ -133,13 +133,13 @@
                 <th>姓名</th>
                 <th>学号</th>
                 <th>班级</th>
-                <th>状态</th>
+                <th>状�?/th>
                 <th>上传时间</th>
                 <th>操作</th>
               </tr>
             </thead>
             <tbody id="studentsTableBody">
-              <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">加载中...</td></tr>
+              <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">加载�?..</td></tr>
             </tbody>
           </table>
         </div>
@@ -148,21 +148,20 @@
       <!-- 作品浏览区段 -->
       <section class="dashboard-section" id="section-gallery" style="display:none">
         <div class="dashboard-header">
-          <h2 class="dashboard-header__title">🖼️ 所有作品</h2>
-          <button class="btn btn--secondary btn--sm" onclick="window.location.href='gallery.html'">完整 Gallery →</button>
+          <h2 class="dashboard-header__title">🖼�?所有作�?/h2>
+          <button class="btn btn--secondary btn--sm" onclick="window.location.href='gallery.html'">完整 Gallery �?/button>
         </div>
         <p style="color:var(--text-muted);margin-top:32px;text-align:center">
-          请前往 <a href="gallery.html" style="color:var(--primary-light)">作品展示页面</a> 查看所有学生作品
-        </p>
+          请前往 <a href="gallery.html" style="color:var(--primary-light)">作品展示页面</a> 查看所有学生作�?        </p>
       </section>
 
-      <!-- 未完成名单区段 -->
+      <!-- 未完成名单区�?-->
       <section class="dashboard-section" id="section-incomplete" style="display:none">
         <div class="dashboard-header">
-          <h2 class="dashboard-header__title">⚠️ 未完成名单</h2>
+          <h2 class="dashboard-header__title">⚠️ 未完成名�?/h2>
         </div>
         <div class="incomplete-list" id="incompleteList">
-          <p style="color:var(--text-muted);text-align:center">加载中...</p>
+          <p style="color:var(--text-muted);text-align:center">加载�?..</p>
         </div>
       </section>
     </main>
@@ -175,10 +174,10 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="firebase/firebaseConfig.js?v=2"></script>
-  <script src="js/util.js?v=2"></script>
-  <script src="js/firebase.js?v=2"></script>
-  <script src="js/teacher.js?v=2"></script>
+  <script src="firebase/firebaseConfig.js?v=3"></script>
+  <script src="js/util.js?v=3"></script>
+  <script src="js/firebase.js?v=3"></script>
+  <script src="js/teacher.js?v=3"></script>
   <!-- 星空背景 -->
   <script>
     (function(){
