@@ -28,7 +28,7 @@
   // 初始化
   // ========================================
   async function init() {
-    console.log('[Teacher] 教师后台初始化');
+    console.log('[Teacher] 教师后台初始化 v2');
 
     // 检查权限
     const hasPermission = await checkPermission();
@@ -42,6 +42,9 @@
       loadWorks()
     ]);
 
+    // 🔧 強制合併 localStorage 狀態到已載入的學生列表
+    forceMergeLocalStatus();
+
     // 渲染
     renderCharts();
     renderStudentsTable(filteredStudents);
@@ -49,7 +52,42 @@
     // 绑定事件
     bindEvents();
 
-    console.log('[Teacher] 教师后台初始化完成');
+    console.log('[Teacher] 教师后台初始化完成，已完成學生:', filteredStudents.filter(function(s){return s.completed||s.photoURL||s.photoLink;}).length);
+  }
+
+  /**
+   * 強制將 localStorage 中的完成狀態合併到 allStudents
+   * 確保無論 Firebase 回傳什麼，localStorage 的狀態都會被套用
+   */
+  function forceMergeLocalStatus() {
+    try {
+      const raw = localStorage.getItem('spss_student_status');
+      if (!raw) return;
+      const statusMap = JSON.parse(raw);
+      let mergedCount = 0;
+
+      allStudents = allStudents.map(s => {
+        const st = statusMap[s.studentId];
+        if (st && (st.completed || st.photoURL || st.photoLink)) {
+          mergedCount++;
+          return { ...s, ...st };
+        }
+        return s;
+      });
+
+      filteredStudents = [...allStudents];
+
+      // 如果 allWorks 還是空的，直接從 localStorage 讀取
+      if (allWorks.length === 0) {
+        allWorks = readLocalWorks();
+      }
+
+      if (mergedCount > 0 || allWorks.length > 0) {
+        console.log('[Teacher] 🔧 強制合併 localStorage: ' + mergedCount + ' 名學生完成, ' + allWorks.length + ' 件作品');
+      }
+    } catch (e) {
+      console.warn('[Teacher] 合併失敗:', e);
+    }
   }
 
   // ========================================

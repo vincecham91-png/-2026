@@ -439,9 +439,15 @@
         console.warn('[Student] 無儲存模組，作品僅保存在記憶體');
       }
 
-      // 更新当前状态
+      // 更新当前状态（強制更新 UI）
       currentWork = workData;
-      updateProfileUI({ completed: true, name: currentStudent.studentName });
+      currentStudent = { ...currentStudent, completed: true, photoURL: photoURL, photoLink: photoLink, reason: reason };
+
+      // 直接操作 DOM 更新狀態徽章（確保 UI 必定更新）
+      const statusEl = document.getElementById('profileStatus');
+      if (statusEl) {
+        statusEl.innerHTML = '<span class="badge badge--success">✅ 已完成</span>';
+      }
 
       // 隐藏进度条
       if (progressBar) {
@@ -584,15 +590,12 @@
       });
     }
 
-    // URL 输入变化时预览
+    // URL 输入变化时预览（不影响已选择的文件，两者独立）
     const linkInput = document.getElementById('photoLink');
     if (linkInput) {
       linkInput.addEventListener('input', S.debounce && S.debounce(function () {
         const url = this.value.trim();
         if (url) {
-          selectedFile = null;
-          const fileInput = document.getElementById('photoFile');
-          if (fileInput) fileInput.value = '';
           previewURL(url);
         }
       }, 500));
