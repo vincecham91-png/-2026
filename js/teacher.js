@@ -117,14 +117,18 @@
         } catch (e) {}
       }
 
-      // 本地降级
+      // 本地降级：合併 localStorage 完成狀態
       if (stats.totalStudents === 0) {
         try {
           const response = await fetch('data/students.json');
           if (response.ok) {
             const students = await response.json();
+            const statusMap = readLocalStudentStatus();
             stats.totalStudents = students.length;
-            stats.completedCount = students.filter(s => s.completed).length;
+            stats.completedCount = students.filter(function(s) {
+              var st = statusMap[s.studentId];
+              return (st && st.completed) || s.completed;
+            }).length;
             stats.incompleteCount = stats.totalStudents - stats.completedCount;
             stats.completionRate = stats.totalStudents > 0
               ? Math.round((stats.completedCount / stats.totalStudents) * 100)
@@ -164,11 +168,13 @@
           const response = await fetch('data/students.json');
           if (response.ok) {
             const students = await response.json();
+            const statusMap = readLocalStudentStatus();
             const classMap = {};
             students.forEach(s => {
               if (!classMap[s.class]) classMap[s.class] = { total: 0, completed: 0 };
               classMap[s.class].total++;
-              if (s.completed) classMap[s.class].completed++;
+              var st = statusMap[s.studentId];
+              if ((st && st.completed) || s.completed) classMap[s.class].completed++;
             });
             allClassStats = Object.entries(classMap).map(([cls, data]) => ({
               className: cls,
@@ -222,19 +228,34 @@
   // ========================================
   async function loadStudents() {
     try {
+      // 優先嘗試 Firebase / localStorage 合併（firebase.js 自動降級）
       if (S.searchStudents) {
         try {
           allStudents = await S.searchStudents('');
-        } catch (e) {}
+        } catch (e) {
+          console.warn('[Teacher] searchStudents 失敗:', e);
+        }
       }
 
+      // 如果 searchStudents 返回空，手動從本地 JSON + localStorage 合併
       if (allStudents.length === 0) {
         try {
           const response = await fetch('data/students.json');
           if (response.ok) {
-            allStudents = await response.json();
+            const rawStudents = await response.json();
+            const statusMap = readLocalStudentStatus();
+            allStudents = rawStudents.map(s => {
+              const status = statusMap[s.studentId];
+              if (status) {
+                return { ...s, ...status, id: s.studentId };
+              }
+              return { ...s, id: s.studentId };
+            });
+            console.log('[Teacher] 本地模式載入學生:', allStudents.length, '人，已完成:', allStudents.filter(function(s){return s.completed;}).length);
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn('[Teacher] 本地學生載入失敗:', e);
+        }
       }
 
       filteredStudents = [...allStudents];
@@ -244,15 +265,62 @@
     }
   }
 
+  /**
+   * 直接從 localStorage 讀取學生完成狀態（教師頁面自用降級）
+   */
+  function readLocalStudentStatus() {
+    try {
+      const raw = localStorage.getItem('spss_student_status');
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  /**
+   * 直接從 localStorage 讀取所有作品（教師頁面自用降級）
+   */
+  function readLocalWorks() {
+    try {
+      const raw = localStorage.getItem('spss_works_index');
+      const index = raw ? JSON.parse(raw) : [];
+      return index
+        .map(function(id) {
+          try {
+            const rawWork = localStorage.getItem('spss_work_' + id);
+            return rawWork ? Object.assign({id: id}, JSON.parse(rawWork)) : null;
+          } catch (e) { return null; }
+        })
+        .filter(Boolean)
+        .sort(function(a, b) {
+          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+        });
+    } catch (e) {
+      console.warn('[Teacher] 本地作品讀取失敗:', e);
+      return [];
+    }
+  }
+
   // ========================================
   // 加载作品列表
   // ========================================
   async function loadWorks() {
     try {
+      // 優先嘗試 Firebase（firebase.js 自動降級到 localStorage）
       if (S.getAllWorks) {
         try {
           allWorks = await S.getAllWorks();
-        } catch (e) {}
+        } catch (e) {
+          console.warn('[Teacher] getAllWorks 失敗:', e);
+        }
+      }
+
+      // 如果還是空的，直接從 localStorage 讀取
+      if (allWorks.length === 0) {
+        allWorks = readLocalWorks();
+        if (allWorks.length > 0) {
+          console.log('[Teacher] 直接從 localStorage 讀取作品:', allWorks.length, '件');
+        }
       }
     } catch (error) {
       console.error('[Teacher] 作品加载失败:', error);

@@ -46,7 +46,7 @@ module.exports = {
   // Firebase 配置
   // ========================================
   FIREBASE: {
-    projectId: 'starphotoshare',
+    projectId: 'starphoto2026-397c3',
     // 如果使用 service account，在此填入路径
     serviceAccountPath: './firebase-service-account.json'
   },

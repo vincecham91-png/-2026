@@ -1,25 +1,24 @@
 /**
  * Star Photo Share System
  * Firebase 配置文件
- * Version 1.0
- * 2026-07-17
+ * Version 1.1
+ * 2026-07-29
  *
  * 功能：初始化 Firebase 服务（Firestore, Storage, Authentication）
  * 所有页面统一引用此文件
  */
 
 // ========================================
-// Firebase 配置
-// （设为 null 表示使用本地模式，不连接 Firebase）
+// Firebase 配置 — starphoto2026-397c3
 // ========================================
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID"
+  apiKey: "AIzaSyAY0bUU6Yc9YsH2PZH5O1L7FpgFUpip1zY",
+  authDomain: "starphoto2026-397c3.firebaseapp.com",
+  projectId: "starphoto2026-397c3",
+  storageBucket: "starphoto2026-397c3.firebasestorage.app",
+  messagingSenderId: "690362404578",
+  appId: "1:690362404578:web:d0622d82ddd2a0559318bb",
+  measurementId: "G-242TNYXWC0"
 };
 
 // ========================================
@@ -54,12 +53,12 @@ if (IS_FIREBASE_CONFIGURED && typeof firebase !== 'undefined') {
         }
       });
 
-    console.log('[Firebase] 初始化成功');
+    console.log('[Firebase] 初始化成功 —', firebaseConfig.projectId);
   } catch (error) {
     console.warn('[Firebase] 初始化失败，使用本地模式:', error.message);
   }
 } else {
-  console.log('[Firebase] 未配置，使用本地数据模式');
+  console.log('[Firebase] 未配置或 SDK 未加载，使用本地数据模式');
 }
 
 // ========================================

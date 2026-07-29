@@ -427,13 +427,16 @@
         workData.createdAt = currentWork.createdAt;
       }
 
-      // 储存到 Firebase
+      // 儲存到 Firebase / localStorage（firebase.js 自動降級）
       if (S.saveWork) {
         try {
           await S.saveWork(currentStudent.studentId, workData);
         } catch (e) {
-          console.warn('[Student] Firebase 储存失败，作品仅保存在本地');
+          console.error('[Student] 儲存失敗（雲端與本地皆無法儲存）:', e);
+          throw new Error('儲存失敗，請檢查瀏覽器儲存空間是否足夠');
         }
+      } else {
+        console.warn('[Student] 無儲存模組，作品僅保存在記憶體');
       }
 
       // 更新当前状态
@@ -448,7 +451,7 @@
         }, 500);
       }
 
-      S.showToast && S.showToast('✅ 作品储存成功！', 'success');
+      S.showToast && S.showToast('✅ 作品儲存成功！', 'success');
 
       // 显示删除按钮
       const deleteBtn = document.getElementById('deleteBtn');

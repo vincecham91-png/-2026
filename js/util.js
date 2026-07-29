@@ -390,6 +390,10 @@ function validateImageFile(file) {
  */
 function isValidImageURL(url) {
   if (!url) return false;
+  // 接受 base64 Data URL（本地儲存模式）
+  if (url.startsWith('data:image/')) return true;
+  // 接受 blob URL（暫存記憶體）
+  if (url.startsWith('blob:')) return true;
   try {
     const urlObj = new URL(url);
     return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
