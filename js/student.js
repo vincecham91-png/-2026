@@ -588,14 +588,16 @@
       });
     }
 
-    // URL 输入变化时预览（不影响已选择的文件，两者独立）
+    // URL 输入变化时预览（如有已選檔案則不覆蓋，兩者獨立）
     const linkInput = document.getElementById('photoLink');
     if (linkInput) {
       linkInput.addEventListener('input', S.debounce && S.debounce(function () {
         const url = this.value.trim();
-        if (url) {
+        if (url && !selectedFile) {
+          // 只有在沒有選擇檔案時才顯示 URL 預覽
           previewURL(url);
         }
+        // 如果有選擇檔案 + 輸入連結，保留檔案預覽，兩者都儲存
       }, 500));
     }
 

@@ -197,12 +197,13 @@ function ldbGetWorksByClass(className) {
  */
 function ldbUpdateStudentStatus(studentId, completed, data) {
   const allStatus = ldbGet(LDB_KEYS.STUDENT_STATUS) || {};
+  // 只儲存完成標記，不儲存完整 base64（避免 localStorage 爆滿）
+  // 完整作品資料（含圖片）統一存在 spss_work_{studentId}
   allStatus[studentId] = {
     ...allStatus[studentId],
     completed,
     uploadTime: completed ? new Date().toISOString() : null,
-    photoURL: data.photoURL || '',
-    photoLink: data.photoLink || '',
+    hasPhoto: completed ? !!(data.photoURL || data.photoLink) : false,
     reason: data.reason || ''
   };
   ldbSet(LDB_KEYS.STUDENT_STATUS, allStatus);
@@ -223,7 +224,17 @@ function ldbGetStudentStatus(studentId) {
  * @returns {object} studentId → status 的映射
  */
 function ldbGetAllStudentStatus() {
-  return ldbGet(LDB_KEYS.STUDENT_STATUS) || {};
+  const raw = ldbGet(LDB_KEYS.STUDENT_STATUS) || {};
+  // 向後相容：將 hasPhoto 映射回 photoURL（供 UI 判斷完成狀態）
+  const result = {};
+  Object.keys(raw).forEach(function(sid) {
+    const st = raw[sid];
+    result[sid] = Object.assign({}, st, {
+      photoURL: st.photoURL || (st.hasPhoto ? '__local__' : ''),
+      photoLink: st.photoLink || ''
+    });
+  });
+  return result;
 }
 
 /**
@@ -1095,18 +1106,16 @@ async function uploadImage(file, className, studentId, onProgress) {
     }
   }
 
-  // localStorage 降級：將圖片轉為 base64 儲存
+  // localStorage 降級：將圖片轉為 base64（統一儲存在 work 資料中，不另存）
   if (onProgress) onProgress(50);
 
   try {
     const base64 = await fileToBase64(file);
-    ldbSet(LDB_KEYS.IMAGE_PREFIX + studentId, base64);
-
     if (onProgress) onProgress(100);
-    console.log('[LDB] 圖片已儲存到本地:', studentId);
+    console.log('[LDB] 圖片已轉為 base64:', studentId, '-', (base64.length / 1024).toFixed(1) + 'KB');
     return base64;
   } catch (e) {
-    console.warn('[LDB] 圖片本地儲存失敗，使用 blob URL:', e);
+    console.warn('[LDB] 圖片轉換失敗，使用 blob URL:', e);
     return URL.createObjectURL(file);
   }
 }
