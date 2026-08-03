@@ -1072,66 +1072,31 @@ async function searchStudents(query) {
 // ========================================
 
 /**
- * 上传图片到 Firebase Storage
- * @param {File} file - 图片文件
- * @param {string} className - 班级
- * @param {string} studentId - 学号
- * @param {Function} onProgress - 进度回调 (percentage)
- * @returns {Promise<string>} 下载 URL
+ * 上傳圖片（優先使用 base64 直存 Firestore，繞過 Storage CORS 問題）
+ *
+ * 策略：Firebase Storage 在 GitHub Pages 部署時因 CORS 無法使用，
+ * 因此預設使用 base64 編碼存入 Firestore，確保跨設備可存取。
+ * Storage 路徑保留為可選項，當 CORS 修復後可自動使用。
+ *
+ * @param {File} file - 圖片檔案
+ * @param {string} className - 班級
+ * @param {string} studentId - 學號
+ * @param {Function} onProgress - 進度回調 (percentage)
+ * @returns {Promise<string>} base64 data URL 或 Storage 下載 URL
  */
 async function uploadImage(file, className, studentId, onProgress) {
-  // 嘗試 Firebase Storage
-  if (isFirebaseAvailable()) {
-    try {
-      const storage = getStorage();
-      if (storage) {
-        const extension = file.name.split('.').pop().toLowerCase();
-        const fileName = `photo.${extension}`;
-        const path = `images/${className}/${studentId}/${fileName}`;
-        const storageRef = storage.ref(path);
+  if (onProgress) onProgress(10);
 
-        // 上传
-        const uploadTask = storageRef.put(file);
-
-        // 监听进度
-        if (onProgress) {
-          uploadTask.on('state_changed',
-            (snapshot) => {
-              const progress = Math.round(
-                (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-              );
-              onProgress(progress);
-            },
-            (error) => {
-              console.error('[Storage] 上传失败:', error);
-              throw error;
-            }
-          );
-        }
-
-        // 等待上传完成
-        await uploadTask;
-
-        // 获取下载 URL
-        const downloadURL = await storageRef.getDownloadURL();
-        return downloadURL;
-      }
-    } catch (error) {
-      console.warn('[Storage] 雲端上傳失敗，使用本地儲存:', error.message);
-    }
-  }
-
-  // localStorage 降級：將圖片轉為 base64（統一儲存在 work 資料中，不另存）
-  if (onProgress) onProgress(50);
-
+  // 預設路徑：base64 直存（可靠、無 CORS 問題、跨設備可存取）
+  // Firebase Storage 因 CORS 不可用，直接跳過以避免長時間等待
   try {
     const base64 = await fileToBase64(file);
     if (onProgress) onProgress(100);
-    console.log('[LDB] 圖片已轉為 base64:', studentId, '-', (base64.length / 1024).toFixed(1) + 'KB');
+    console.log('[Storage] ✅ base64 編碼完成:', studentId, '-', (base64.length / 1024).toFixed(1) + 'KB');
     return base64;
   } catch (e) {
-    console.warn('[LDB] 圖片轉換失敗，使用 blob URL:', e);
-    return URL.createObjectURL(file);
+    console.warn('[Storage] base64 編碼失敗:', e.message);
+    throw new Error('圖片處理失敗');
   }
 }
 

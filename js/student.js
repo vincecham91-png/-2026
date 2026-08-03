@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Star Photo Share System
  * Student JS - 學生上傳頁面邏輯
  * Version 1.1
@@ -487,45 +487,14 @@
     try {
       let photoURL = currentWork?.photoURL || '';
 
-      // 如果有選擇新檔案
+      // 如果有選擇新檔案：直接壓縮為 base64 存入 Firestore
+      // （Firebase Storage 因 CORS 不可用，base64 直存是最可靠的路徑）
       if (selectedFile) {
         if (progressBar) progressBar.classList.add('upload-progress--active');
 
-        // 步驟 1：壓縮圖片（標準尺寸，給 Storage 用）
-        S.showToast && S.showToast('正在壓縮圖片...', 'info');
-        const compressedFile = await compressImage(selectedFile);
-
-        // 步驟 2：上傳到 Firebase Storage（優先路徑）
-        // 注意：如果 Storage CORS 未配置，uploadImage 內部會自動降級到 base64
-        // 但如果 uploadImage 拋出異常，我們也有備用方案
-        S.showToast && S.showToast('正在上傳...', 'info');
-
-        let storageSuccess = false;
-        if (S.uploadImage) {
-          try {
-            const className = currentStudent.studentClass;
-            const studentId = currentStudent.studentId;
-            photoURL = await S.uploadImage(compressedFile, className, studentId, (progress) => {
-              if (progressFill) progressFill.style.width = progress + '%';
-              if (progressText) progressText.textContent = progress + '%';
-            });
-            storageSuccess = true;
-            console.log('[Student] ✅ Storage 上傳成功');
-          } catch (e) {
-            console.error('[Student] ❌ Firebase Storage 上傳失敗:', e.message);
-            // 繼續到降級方案
-          }
-        }
-
-        // 步驟 3：降級方案 — base64 直存 Firestore（跨設備可存取）
-        if (!storageSuccess || !photoURL || photoURL.startsWith('blob:')) {
-          if (photoURL && photoURL.startsWith('blob:')) {
-            console.warn('[Student] 偵測到 blob URL，強制使用 base64');
-          }
-          S.showToast && S.showToast('使用備用通道上傳...', 'info');
-          photoURL = await compressAndEncodeForFirestore(selectedFile, progressFill, progressText);
-          console.log('[Student] 🔧 降級 base64 完成, 大小:', (photoURL.length / 1024).toFixed(1) + 'KB');
-        }
+        S.showToast && S.showToast('正在處理圖片...', 'info');
+        photoURL = await compressAndEncodeForFirestore(selectedFile, progressFill, progressText);
+        console.log('[Student] ✅ base64 編碼完成:', (photoURL.length / 1024).toFixed(1) + 'KB');
       }
 
       // 步驟 4：構建作品資料
