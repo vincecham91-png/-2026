@@ -1,10 +1,11 @@
 /**
  * Star Photo Share System
- * Student JS - 学生上传页面逻辑
- * Version 1.0
- * 2026-07-17
+ * Student JS - 學生上傳頁面邏輯
+ * Version 1.1
+ * 2026-08-03
  *
- * 功能：读取个人资料、上传图片/网址、压缩图片、储存作品、删除、Session 检查
+ * 功能：讀取個人資料、上傳圖片/網址、壓縮圖片、儲存作品、刪除、Session 檢查
+ * v1.1: Storage CORS 失敗時降級到 base64 直存 Firestore（跨設備可存取）
  */
 
 (function () {
@@ -13,7 +14,7 @@
   const S = window.SPSS || {};
 
   // ========================================
-  // 状态变量
+  // 狀態變數
   // ========================================
   let currentStudent = null;
   let selectedFile = null;
@@ -24,9 +25,9 @@
   // 初始化
   // ========================================
   async function init() {
-    console.log('[Student] 上传页面初始化');
+    console.log('[Student] 上傳頁面初始化 v1.1');
 
-    // 检查 Session
+    // 檢查 Session
     if (!checkSession()) {
       return;
     }
@@ -38,16 +39,16 @@
     await loadProfile();
     await loadExistingWork();
 
-    console.log('[Student] 上传页面初始化完成');
+    console.log('[Student] 上傳頁面初始化完成');
   }
 
   // ========================================
-  // 检查 Session
+  // 檢查 Session
   // ========================================
   function checkSession() {
     currentStudent = S.getSession && S.getSession('studentSession');
     if (!currentStudent || !currentStudent.studentId) {
-      S.showToast && S.showToast('请先登入', 'warning');
+      S.showToast && S.showToast('請先登入', 'warning');
       setTimeout(() => {
         window.location.href = 'login.html';
       }, 1000);
@@ -57,22 +58,22 @@
   }
 
   // ========================================
-  // 加载个人资料
+  // 載入個人資料
   // ========================================
   async function loadProfile() {
     try {
-      // 先显示 Session 中的基本资料
+      // 先顯示 Session 中的基本資料
       document.getElementById('profileName').textContent = currentStudent.studentName || '-';
       document.getElementById('profileClass').textContent = currentStudent.studentClass || '-';
       document.getElementById('profileId').textContent = currentStudent.studentId || '-';
 
-      // 尝试从 Firebase 加载最新资料
+      // 嘗試從 Firebase 載入最新資料
       let student = null;
       if (S.getStudentById) {
         try {
           student = await S.getStudentById(currentStudent.studentId);
         } catch (e) {
-          console.warn('[Student] Firebase 加载学生资料失败');
+          console.warn('[Student] Firebase 載入學生資料失敗');
         }
       }
 
@@ -92,13 +93,13 @@
         updateProfileUI(student);
       }
     } catch (error) {
-      console.error('[Student] 加载个人资料失败:', error);
+      console.error('[Student] 載入個人資料失敗:', error);
     }
   }
 
   /**
-   * 更新个人资料 UI
-   * @param {object} student - 学生数据
+   * 更新個人資料 UI
+   * @param {object} student - 學生資料
    */
   function updateProfileUI(student) {
     const statusEl = document.getElementById('profileStatus');
@@ -112,7 +113,7 @@
       }
     }
 
-    // 更新头像（首字）
+    // 更新頭像（首字）
     const avatarEl = document.getElementById('profileAvatar');
     if (avatarEl && student.name) {
       avatarEl.textContent = student.name.charAt(0);
@@ -120,7 +121,7 @@
   }
 
   // ========================================
-  // 加载已有作品
+  // 載入已有作品
   // ========================================
   async function loadExistingWork() {
     try {
@@ -130,7 +131,7 @@
         try {
           work = await S.getStudentWork(currentStudent.studentId);
         } catch (e) {
-          console.warn('[Student] Firebase 加载作品失败');
+          console.warn('[Student] Firebase 載入作品失敗');
         }
       }
 
@@ -156,13 +157,13 @@
         populateForm(work);
       }
     } catch (error) {
-      console.error('[Student] 加载作品失败:', error);
+      console.error('[Student] 載入作品失敗:', error);
     }
   }
 
   /**
-   * 填充表单
-   * @param {object} work - 作品数据
+   * 填充表單
+   * @param {object} work - 作品資料
    */
   function populateForm(work) {
     if (work.photoLink) {
@@ -179,7 +180,7 @@
       updateCharCount();
     }
 
-    // 更新按钮状态
+    // 更新按鈕狀態
     const deleteBtn = document.getElementById('deleteBtn');
     if (deleteBtn) {
       deleteBtn.style.display = work.photoURL || work.photoLink ? 'inline-flex' : 'none';
@@ -187,12 +188,12 @@
   }
 
   // ========================================
-  // 图片预览
+  // 圖片預覽
   // ========================================
 
   /**
-   * 预览上传的本地图片
-   * @param {File} file - 图片文件
+   * 預覽上傳的本地圖片
+   * @param {File} file - 圖片檔案
    */
   function previewLocalFile(file) {
     const previewArea = document.getElementById('previewArea');
@@ -201,23 +202,23 @@
     const reader = new FileReader();
     reader.onload = function (e) {
       previewArea.innerHTML = `
-        <img src="${e.target.result}" alt="预览图片" />
-        <button class="preview-area__remove" aria-label="删除图片" id="removePreviewBtn">✕</button>
+        <img src="${e.target.result}" alt="預覽圖片" />
+        <button class="preview-area__remove" aria-label="刪除圖片" id="removePreviewBtn">✕</button>
       `;
       previewArea.classList.add('preview-area--has-image');
 
-      // 绑定删除按钮
+      // 綁定刪除按鈕
       document.getElementById('removePreviewBtn').addEventListener('click', clearImage);
 
-      // 清除 URL 输入
+      // 清除 URL 輸入
       document.getElementById('photoLink').value = '';
     };
     reader.readAsDataURL(file);
   }
 
   /**
-   * 预览图片 URL
-   * @param {string} url - 图片 URL
+   * 預覽圖片 URL
+   * @param {string} url - 圖片 URL
    */
   function previewURL(url) {
     const previewArea = document.getElementById('previewArea');
@@ -227,15 +228,15 @@
       previewArea.innerHTML = `
         <div class="preview-area__placeholder">
           <div class="preview-area__placeholder-icon">🔗</div>
-          <div class="preview-area__placeholder-text">请输入有效的图片网址</div>
+          <div class="preview-area__placeholder-text">請輸入有效的圖片網址</div>
         </div>
       `;
       return;
     }
 
     previewArea.innerHTML = `
-      <img src="${url}" alt="预览图片" onerror="this.parentElement.innerHTML='<div class=\\'preview-area__placeholder\\'><div class=\\'preview-area__placeholder-icon\\'>❌</div><div class=\\'preview-area__placeholder-text\\'>图片无法读取</div></div>'"/>
-      <button class="preview-area__remove" aria-label="删除图片" id="removePreviewBtn">✕</button>
+      <img src="${url}" alt="預覽圖片" onerror="this.parentElement.innerHTML='<div class=\\'preview-area__placeholder\\'><div class=\\'preview-area__placeholder-icon\\'>❌</div><div class=\\'preview-area__placeholder-text\\'>圖片無法讀取</div></div>'"/>
+      <button class="preview-area__remove" aria-label="刪除圖片" id="removePreviewBtn">✕</button>
     `;
     previewArea.classList.add('preview-area--has-image');
 
@@ -246,7 +247,7 @@
   }
 
   /**
-   * 预览图片（通过 URL 显示）
+   * 預覽圖片（通過 URL 顯示）
    * @param {string} url
    */
   function previewImage(url) {
@@ -254,7 +255,7 @@
   }
 
   /**
-   * 清除图片
+   * 清除圖片
    */
   function clearImage() {
     const previewArea = document.getElementById('previewArea');
@@ -263,25 +264,26 @@
     previewArea.innerHTML = `
       <div class="preview-area__placeholder">
         <div class="preview-area__placeholder-icon">📷</div>
-        <div class="preview-area__placeholder-text">上传图片后在此预览</div>
+        <div class="preview-area__placeholder-text">上傳圖片後在此預覽</div>
       </div>
     `;
     previewArea.classList.remove('preview-area--has-image');
     selectedFile = null;
 
-    // 清除文件输入
+    // 清除檔案輸入
     const fileInput = document.getElementById('photoFile');
     if (fileInput) fileInput.value = '';
   }
 
   // ========================================
-  // 图片压缩
+  // 圖片壓縮
   // ========================================
 
   /**
-   * 压缩图片（最长边 1600px, JPEG 85%）
-   * @param {File} file - 原始文件
-   * @returns {Promise<File>} 压缩后的文件
+   * 壓縮圖片（最長邊 1600px, JPEG 85%）
+   * 用於 Firebase Storage 上傳
+   * @param {File} file - 原始檔案
+   * @returns {Promise<File>} 壓縮後的檔案
    */
   async function compressImage(file) {
     return new Promise((resolve, reject) => {
@@ -296,14 +298,14 @@
             resolve(result);
           },
           error(err) {
-            console.warn('[Student] 图片压缩失败，使用原始图片:', err);
+            console.warn('[Student] 圖片壓縮失敗，使用原始圖片:', err);
             resolve(file);
           }
         });
         return;
       }
 
-      // 使用 Canvas 手动压缩
+      // 使用 Canvas 手動壓縮
       const reader = new FileReader();
       reader.onload = function (e) {
         const img = new Image();
@@ -335,41 +337,146 @@
             resolve(compressedFile);
           }, 'image/jpeg', 0.85);
         };
-        img.onerror = () => reject(new Error('图片加载失败'));
+        img.onerror = () => reject(new Error('圖片載入失敗'));
         img.src = e.target.result;
       };
-      reader.onerror = () => reject(new Error('文件读取失败'));
+      reader.onerror = () => reject(new Error('檔案讀取失敗'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /**
+   * 壓縮圖片為小尺寸 base64，用於 Firestore 直存（繞過 Storage CORS）
+   * 目標：最長邊 800px、JPEG 70%、base64 約 50-100KB（遠低於 Firestore 1MB 上限）
+   * @param {File} file - 原始檔案
+   * @param {HTMLElement} progressFill - 進度條填充元素
+   * @param {HTMLElement} progressText - 進度文字元素
+   * @returns {Promise<string>} base64 data URL
+   */
+  async function compressAndEncodeForFirestore(file, progressFill, progressText) {
+    console.log('[Student] 🔧 使用 base64 降級方案（繞過 Storage CORS）');
+    if (progressFill) progressFill.style.width = '30%';
+    if (progressText) progressText.textContent = '正在壓縮...';
+
+    return new Promise((resolve, reject) => {
+      // 使用 Compressor.js 壓縮到更小尺寸
+      if (window.Compressor) {
+        new Compressor(file, {
+          quality: 0.7,
+          maxWidth: 800,
+          maxHeight: 800,
+          mimeType: 'image/jpeg',
+          success(result) {
+            if (progressFill) progressFill.style.width = '60%';
+            if (progressText) progressText.textContent = '正在編碼...';
+            fileToBase64(result).then(base64 => {
+              console.log('[Student] base64 編碼完成:', (base64.length / 1024).toFixed(1) + 'KB');
+              if (progressFill) progressFill.style.width = '100%';
+              if (progressText) progressText.textContent = '100%';
+              resolve(base64);
+            }).catch(reject);
+          },
+          error(err) {
+            console.warn('[Student] Compressor 降級壓縮失敗:', err);
+            // 最後手段：Canvas 手動壓縮
+            canvasCompressAndEncode(file, 800, 0.7, progressFill, progressText).then(resolve).catch(reject);
+          }
+        });
+        return;
+      }
+
+      // 無 Compressor.js：Canvas 手動壓縮
+      canvasCompressAndEncode(file, 800, 0.7, progressFill, progressText).then(resolve).catch(reject);
+    });
+  }
+
+  /**
+   * Canvas 手動壓縮並轉 base64
+   * @param {File} file - 原始檔案
+   * @param {number} maxDim - 最長邊像素
+   * @param {number} quality - JPEG 品質 (0-1)
+   * @param {HTMLElement} progressFill - 進度條
+   * @param {HTMLElement} progressText - 進度文字
+   * @returns {Promise<string>} base64 data URL
+   */
+  function canvasCompressAndEncode(file, maxDim, quality, progressFill, progressText) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const img = new Image();
+        img.onload = function () {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height / width) * maxDim);
+              width = maxDim;
+            } else {
+              width = Math.round((width / height) * maxDim);
+              height = maxDim;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const dataURL = canvas.toDataURL('image/jpeg', quality);
+          console.log('[Student] Canvas 降級 base64:', (dataURL.length / 1024).toFixed(1) + 'KB');
+          if (progressFill) progressFill.style.width = '100%';
+          if (progressText) progressText.textContent = '100%';
+          resolve(dataURL);
+        };
+        img.onerror = () => reject(new Error('圖片載入失敗'));
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error('檔案讀取失敗'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /**
+   * 將 File 轉為 base64 data URL
+   * @param {File|Blob} file - 檔案
+   * @returns {Promise<string>} base64 data URL
+   */
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('檔案讀取失敗'));
       reader.readAsDataURL(file);
     });
   }
 
   // ========================================
-  // 上传并储存作品
+  // 上傳並儲存作品
   // ========================================
   async function saveWork() {
-    // 防止重复提交
+    // 防止重複提交
     if (isUploading) return;
 
-    // 验证
+    // 驗證
     const photoLink = document.getElementById('photoLink').value.trim();
     const reason = document.getElementById('reasonInput').value.trim();
 
     if (!selectedFile && !photoLink && !currentWork?.photoURL) {
-      S.showToast && S.showToast('请上传图片或填写图片网址', 'warning');
+      S.showToast && S.showToast('請上傳圖片或填寫圖片網址', 'warning');
       return;
     }
 
     if (!reason) {
-      S.showToast && S.showToast('请填写分享原因', 'warning');
+      S.showToast && S.showToast('請填寫分享原因', 'warning');
       return;
     }
 
     if (reason.length > 1000) {
-      S.showToast && S.showToast('分享原因不能超过1000字', 'warning');
+      S.showToast && S.showToast('分享原因不能超過1000字', 'warning');
       return;
     }
 
-    // 开始上传
+    // 開始上傳
     isUploading = true;
     updateButtonState(true);
 
@@ -380,17 +487,20 @@
     try {
       let photoURL = currentWork?.photoURL || '';
 
-      // 如果有选择新文件，上传到 Storage
+      // 如果有選擇新檔案
       if (selectedFile) {
         if (progressBar) progressBar.classList.add('upload-progress--active');
 
-        // 压缩图片
-        S.showToast && S.showToast('正在压缩图片...', 'info');
+        // 步驟 1：壓縮圖片（標準尺寸，給 Storage 用）
+        S.showToast && S.showToast('正在壓縮圖片...', 'info');
         const compressedFile = await compressImage(selectedFile);
 
-        // 上传
-        S.showToast && S.showToast('正在上传...', 'info');
+        // 步驟 2：上傳到 Firebase Storage（優先路徑）
+        // 注意：如果 Storage CORS 未配置，uploadImage 內部會自動降級到 base64
+        // 但如果 uploadImage 拋出異常，我們也有備用方案
+        S.showToast && S.showToast('正在上傳...', 'info');
 
+        let storageSuccess = false;
         if (S.uploadImage) {
           try {
             const className = currentStudent.studentClass;
@@ -399,17 +509,26 @@
               if (progressFill) progressFill.style.width = progress + '%';
               if (progressText) progressText.textContent = progress + '%';
             });
+            storageSuccess = true;
+            console.log('[Student] ✅ Storage 上傳成功');
           } catch (e) {
-            console.error('[Student] Firebase 上传失败:', e);
-            // 降级：使用本地预览
-            photoURL = URL.createObjectURL(selectedFile);
+            console.error('[Student] ❌ Firebase Storage 上傳失敗:', e.message);
+            // 繼續到降級方案
           }
-        } else {
-          photoURL = URL.createObjectURL(selectedFile);
+        }
+
+        // 步驟 3：降級方案 — base64 直存 Firestore（跨設備可存取）
+        if (!storageSuccess || !photoURL || photoURL.startsWith('blob:')) {
+          if (photoURL && photoURL.startsWith('blob:')) {
+            console.warn('[Student] 偵測到 blob URL，強制使用 base64');
+          }
+          S.showToast && S.showToast('使用備用通道上傳...', 'info');
+          photoURL = await compressAndEncodeForFirestore(selectedFile, progressFill, progressText);
+          console.log('[Student] 🔧 降級 base64 完成, 大小:', (photoURL.length / 1024).toFixed(1) + 'KB');
         }
       }
 
-      // 构建作品数据
+      // 步驟 4：構建作品資料
       const workData = {
         studentId: currentStudent.studentId,
         name: currentStudent.studentName,
@@ -420,24 +539,39 @@
         completed: true
       };
 
-      // 如果是更新已有作品，保留创建时间
+      // 如果是更新已有作品，保留創建時間
       if (currentWork && currentWork.createdAt) {
         workData.createdAt = currentWork.createdAt;
       }
 
-      // 儲存到 Firebase / localStorage（firebase.js 自動降級）
+      // 步驟 5：儲存到 Firestore / localStorage（firebase.js 自動降級）
       if (S.saveWork) {
         try {
           await S.saveWork(currentStudent.studentId, workData);
+          console.log('[Student] ✅ 作品儲存成功');
         } catch (e) {
-          console.error('[Student] 儲存失敗（雲端與本地皆無法儲存）:', e);
-          throw new Error('儲存失敗，請檢查瀏覽器儲存空間是否足夠');
+          console.error('[Student] ❌ 儲存失敗（雲端與本地皆無法儲存）:', e);
+          // 如果 Firestore 寫入因文件過大失敗，嘗試再次壓縮
+          if (e.message && (e.message.includes('too large') || e.message.includes('size'))) {
+            S.showToast && S.showToast('圖片過大，正在重新壓縮...', 'info');
+            photoURL = await compressAndEncodeForFirestore(selectedFile, progressFill, progressText);
+            workData.photoURL = photoURL;
+            try {
+              await S.saveWork(currentStudent.studentId, workData);
+              console.log('[Student] ✅ 重壓縮後儲存成功');
+            } catch (e2) {
+              console.error('[Student] ❌ 重壓縮後仍失敗:', e2);
+              throw new Error('儲存失敗，請嘗試使用較小的圖片');
+            }
+          } else {
+            throw new Error('儲存失敗，請檢查網路連線');
+          }
         }
       } else {
         console.warn('[Student] 無儲存模組，作品僅保存在記憶體');
       }
 
-      // 更新当前状态（強制更新 UI）
+      // 更新當前狀態（強制更新 UI）
       currentWork = workData;
       currentStudent = { ...currentStudent, completed: true, photoURL: photoURL, photoLink: photoLink, reason: reason };
 
@@ -447,15 +581,7 @@
         statusEl.innerHTML = '<span class="badge badge--success">✅ 已完成</span>';
       }
 
-      // 診斷：驗證儲存結果
-      if (window._diag) {
-        window._diag('💾 儲存完成 - photoURL:' + (photoURL ? (photoURL.substring(0,20)+'...') : '無') + ' link:' + (photoLink || '無'));
-        var verifyWork = localStorage.getItem('spss_work_' + currentStudent.studentId);
-        var verifyStatus = localStorage.getItem('spss_student_status');
-        window._diag('🔍 驗證: work=' + (verifyWork ? '✅' : '❌') + ' status=' + (verifyStatus ? '✅' : '❌'));
-      }
-
-      // 隐藏进度条
+      // 隱藏進度條
       if (progressBar) {
         setTimeout(() => {
           progressBar.classList.remove('upload-progress--active');
@@ -465,13 +591,13 @@
 
       S.showToast && S.showToast('✅ 作品儲存成功！', 'success');
 
-      // 显示删除按钮
+      // 顯示刪除按鈕
       const deleteBtn = document.getElementById('deleteBtn');
       if (deleteBtn) deleteBtn.style.display = 'inline-flex';
 
     } catch (error) {
-      console.error('[Student] 储存失败:', error);
-      S.showToast && S.showToast('储存失败，请稍后再试', 'error');
+      console.error('[Student] 儲存失敗:', error);
+      S.showToast && S.showToast(error.message || '儲存失敗，請稍後再試', 'error');
     } finally {
       isUploading = false;
       updateButtonState(false);
@@ -483,8 +609,8 @@
   }
 
   /**
-   * 更新按钮状态
-   * @param {boolean} uploading - 是否上传中
+   * 更新按鈕狀態
+   * @param {boolean} uploading - 是否上傳中
    */
   function updateButtonState(uploading) {
     const saveBtn = document.getElementById('saveBtn');
@@ -492,22 +618,22 @@
       saveBtn.disabled = uploading;
       if (uploading) {
         saveBtn.classList.add('btn--loading');
-        saveBtn.textContent = '上传中...';
+        saveBtn.textContent = '上傳中...';
       } else {
         saveBtn.classList.remove('btn--loading');
-        saveBtn.textContent = '储存';
+        saveBtn.textContent = '💾 儲存';
       }
     }
   }
 
   // ========================================
-  // 删除作品
+  // 刪除作品
   // ========================================
   async function deleteWork() {
     const confirmed = await S.showConfirm(
-      '确认删除',
-      '删除后作品将无法恢复，确定要继续吗？',
-      '删除',
+      '確認刪除',
+      '刪除後作品將無法恢復，確定要繼續嗎？',
+      '刪除',
       '取消',
       'danger'
     );
@@ -519,7 +645,7 @@
         try {
           await S.deleteWork(currentStudent.studentId, currentWork?.photoURL);
         } catch (e) {
-          console.warn('[Student] Firebase 删除失败');
+          console.warn('[Student] Firebase 刪除失敗');
         }
       }
 
@@ -533,14 +659,14 @@
       const deleteBtn = document.getElementById('deleteBtn');
       if (deleteBtn) deleteBtn.style.display = 'none';
 
-      S.showToast && S.showToast('作品已删除', 'info');
+      S.showToast && S.showToast('作品已刪除', 'info');
     } catch (error) {
-      console.error('[Student] 删除失败:', error);
+      console.error('[Student] 刪除失敗:', error);
     }
   }
 
   // ========================================
-  // 清空表单
+  // 清空表單
   // ========================================
   function clearForm() {
     clearImage();
@@ -550,7 +676,7 @@
   }
 
   // ========================================
-  // 字符计数
+  // 字元計數
   // ========================================
   function updateCharCount() {
     const textarea = document.getElementById('reasonInput');
@@ -574,10 +700,10 @@
   }
 
   // ========================================
-  // 事件绑定
+  // 事件綁定
   // ========================================
   function bindEvents() {
-    // 文件选择
+    // 檔案選擇
     const fileInput = document.getElementById('photoFile');
     if (fileInput) {
       fileInput.addEventListener('change', function () {
@@ -586,7 +712,7 @@
 
         const validation = S.validateImageFile && S.validateImageFile(file);
         if (!validation || !validation.valid) {
-          S.showToast && S.showToast(validation.error || '无效的图片文件', 'error');
+          S.showToast && S.showToast(validation.error || '無效的圖片檔案', 'error');
           this.value = '';
           return;
         }
@@ -596,7 +722,7 @@
       });
     }
 
-    // URL 输入变化时预览（如有已選檔案則不覆蓋，兩者獨立）
+    // URL 輸入變化時預覽（如有已選檔案則不覆蓋，兩者獨立）
     const linkInput = document.getElementById('photoLink');
     if (linkInput) {
       linkInput.addEventListener('input', S.debounce && S.debounce(function () {
@@ -609,29 +735,29 @@
       }, 500));
     }
 
-    // 字符计数
+    // 字元計數
     const reasonInput = document.getElementById('reasonInput');
     if (reasonInput) {
       reasonInput.addEventListener('input', updateCharCount);
     }
 
-    // 储存按钮
+    // 儲存按鈕
     const saveBtn = document.getElementById('saveBtn');
     if (saveBtn) {
       saveBtn.addEventListener('click', saveWork);
     }
 
-    // 清空按钮
+    // 清空按鈕
     const clearBtn = document.getElementById('clearBtn');
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
-        S.showConfirm('确认清空', '确定要清空所有已填内容吗？').then(confirmed => {
+        S.showConfirm('確認清空', '確定要清空所有已填內容嗎？').then(confirmed => {
           if (confirmed) clearForm();
         });
       });
     }
 
-    // 删除按钮
+    // 刪除按鈕
     const deleteBtn = document.getElementById('deleteBtn');
     if (deleteBtn) {
       deleteBtn.addEventListener('click', deleteWork);
@@ -643,7 +769,7 @@
       logoutBtn.addEventListener('click', logout);
     }
 
-    // 返回首页
+    // 返回首頁
     const homeBtn = document.getElementById('homeBtn');
     if (homeBtn) {
       homeBtn.addEventListener('click', () => {
@@ -651,7 +777,7 @@
       });
     }
 
-    // 拖拽上传
+    // 拖曳上傳
     const previewArea = document.getElementById('previewArea');
     if (previewArea && fileInput) {
       previewArea.addEventListener('dragover', (e) => {
@@ -677,9 +803,9 @@
   }
 
   // ========================================
-  // 启动
+  // 啟動
   // ========================================
   document.addEventListener('DOMContentLoaded', init);
 
-  console.log('[SPSS] Student 模块已加载');
+  console.log('[SPSS] Student v1.1 模組已載入（含 Firestore 降級方案）');
 })();
