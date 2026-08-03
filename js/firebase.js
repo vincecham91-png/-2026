@@ -883,32 +883,47 @@ async function getAllClassStats() {
 
   if (cloudStats && cloudStats.length > 0) return cloudStats;
 
-  // localStorage 降級
-  const stats = ldbGetAllClassStats();
-  if (stats.length > 0) {
-    console.log('[LDB] 從本地讀取班級統計:', stats.length, '班');
-    return stats;
-  }
-
-  // 無任何上傳記錄時，從本地 JSON 計算
+  // 🔧 永遠從 JSON 補全所有班級，再合併 localStorage 完成數
   try {
     const response = await fetch('data/students.json');
     if (response.ok) {
       const students = await response.json();
+      const statusMap = ldbGetAllStudentStatus();
       const classMap = {};
       students.forEach(s => {
-        if (!classMap[s.class]) classMap[s.class] = { total: 0 };
+        if (!classMap[s.class]) classMap[s.class] = { total: 0, completed: 0 };
         classMap[s.class].total++;
+        const st = statusMap[s.studentId];
+        if (st && st.completed) classMap[s.class].completed++;
       });
-      return Object.entries(classMap).map(([className, data]) => ({
-        className,
-        studentCount: data.total,
-        completedCount: 0,
-        completionRate: 0,
-        updatedAt: null
-      })).sort((a, b) => a.className.localeCompare(b.className));
+
+      // 合併 localStorage 中的班級統計（保留手動更新的覆蓋）
+      const ldbStats = ldbGetAllClassStats();
+      const ldbMap = {};
+      ldbStats.forEach(cs => { ldbMap[cs.className] = cs; });
+
+      const merged = Object.entries(classMap).map(([className, data]) => {
+        const ldb = ldbMap[className];
+        return {
+          className,
+          studentCount: data.total,
+          completedCount: ldb ? Math.max(data.completed, ldb.completedCount || 0) : data.completed,
+          completionRate: 0,
+          updatedAt: ldb ? ldb.updatedAt : null
+        };
+      });
+
+      // 計算完成率
+      merged.forEach(c => {
+        c.completionRate = c.studentCount > 0 ? Math.round((c.completedCount / c.studentCount) * 100) : 0;
+      });
+
+      console.log('[LDB] 合併班級統計:', merged.length, '班, 完成:', merged.reduce(function(a,b){return a+b.completedCount;}, 0));
+      return merged.sort((a, b) => a.className.localeCompare(b.className));
     }
-  } catch (e) { /* 忽略 */ }
+  } catch (e) {
+    console.warn('[LDB] 班級統計計算失敗:', e);
+  }
 
   return [];
 }
