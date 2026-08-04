@@ -3,8 +3,9 @@ main = "src/index.js"
 compatibility_date = "2026-01-01"
 compatibility_flags = ["nodejs_compat"]
 
-# R2 圖片儲存（需先在 Cloudflare Dashboard 啟用 R2）
-# 啟用後取消註解下行：
+# R2 圖片儲存 — 執行 "npx wrangler r2 bucket create star-photo-uploads" 前
+# 需先在 https://dash.cloudflare.com 手動啟用 R2 服務（一次性）
+# 啟用後取消下行註解並重新部署：
 # [[r2_buckets]]
 # binding = "PHOTOS"
 # bucket_name = "star-photo-uploads"
