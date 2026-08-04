@@ -158,38 +158,51 @@
         } catch (e) {}
       }
 
-      // 🔧 從 works 集合補充完成數（students 集合可能未同步）
-      if (stats.completedCount === 0 && S.getAllWorks) {
+      // 🔧 從 Firestore works 集合獲取已完成學生（最可靠的數據來源）
+      let worksCompleted = 0;
+      if (S.getAllWorks) {
         try {
           const works = await S.getAllWorks();
           if (works && works.length > 0) {
-            stats.completedCount = works.length;
-            stats.incompleteCount = Math.max(0, stats.totalStudents - works.length);
-            stats.completionRate = stats.totalStudents > 0
-              ? Math.round((works.length / stats.totalStudents) * 100) : 0;
-            console.log('[Teacher] 🔧 從 works 集合補充統計: ' + works.length + ' 件作品');
+            // 用 Set 去重（一個學生可能有多件作品）
+            var ids = new Set();
+            works.forEach(function(w) { if (w.studentId || w.id) ids.add(w.studentId || w.id); });
+            worksCompleted = ids.size;
+            console.log('[Teacher] 🔧 works 集合統計: ' + worksCompleted + ' 人已完成');
           }
         } catch (e) {}
       }
 
-      // 本地降级：合併 localStorage 完成狀態
+      // 本地降级：從 JSON 載入學生總數
       if (stats.totalStudents === 0) {
         try {
           const response = await fetch('data/students.json');
           if (response.ok) {
             const students = await response.json();
-            const statusMap = readLocalStudentStatus();
             stats.totalStudents = students.length;
-            stats.completedCount = students.filter(function(s) {
+
+            // 合併 localStorage 完成狀態
+            const statusMap = readLocalStudentStatus();
+            var localCompleted = students.filter(function(s) {
               var st = statusMap[s.studentId];
               return (st && st.completed) || s.completed;
             }).length;
+
+            // 以 Firestore works 為準，localStorage 為輔
+            stats.completedCount = Math.max(worksCompleted, localCompleted);
             stats.incompleteCount = stats.totalStudents - stats.completedCount;
             stats.completionRate = stats.totalStudents > 0
               ? Math.round((stats.completedCount / stats.totalStudents) * 100)
               : 0;
           }
         } catch (e) {}
+      } else {
+        // Firestore students 有數據時，用 works 補充
+        stats.completedCount = Math.max(stats.completedCount, worksCompleted);
+        stats.incompleteCount = stats.totalStudents - stats.completedCount;
+        stats.completionRate = stats.totalStudents > 0
+          ? Math.round((stats.completedCount / stats.totalStudents) * 100)
+          : 0;
       }
 
       // 更新 UI
