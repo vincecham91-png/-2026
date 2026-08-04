@@ -552,74 +552,7 @@ async function getStudentWork(studentId) {
  * @returns {Promise<void>}
  */
 async function saveWork(studentId, workData) {
-  // 嘗試 Firebase 雲端儲存
-  if (isFirebaseAvailable()) {
-    try {
-      const db = getFirestore();
-      const now = firebase.firestore.FieldValue.serverTimestamp();
-
-      await db.collection('works').doc(studentId).set({
-        studentId: workData.studentId,
-        name: workData.name,
-        class: workData.class,
-        photoURL: workData.photoURL || '',
-        photoLink: workData.photoLink || '',
-        reason: workData.reason || '',
-        completed: true,
-        updatedAt: now,
-        createdAt: workData.createdAt || now
-      }, { merge: true });
-
-      // 同时更新学生 Collection
-      await updateStudentStatus(studentId, true, {
-        photoURL: workData.photoURL || '',
-        photoLink: workData.photoLink || '',
-        reason: workData.reason || ''
-      });
-
-      // 更新班级完成统计
-      if (workData.class) {
-        await updateClassStats(workData.class);
-      }
-
-      // 记录日志
-      await addLog('upload', studentId, `${workData.name} 上传了作品`);
-      console.log('[Firebase] 作品已儲存到雲端:', studentId);
-      return;
-    } catch (error) {
-      console.error('[Firebase] 雲端儲存失敗:', error.message);
-
-      // Firestore 短暫離線時重試（最多 3 次，每次等 2 秒）
-      if (error.message && error.message.includes('offline')) {
-        for (let retry = 0; retry < 3; retry++) {
-          console.log(`[Firebase] 重試儲存 (${retry + 1}/3)...`);
-          await new Promise(r => setTimeout(r, 2000));
-          try {
-            const db = getFirestore();
-            await db.collection('works').doc(studentId).set({
-              studentId: workData.studentId, name: workData.name, class: workData.class,
-              photoURL: workData.photoURL || '', photoLink: workData.photoLink || '',
-              reason: workData.reason || '', completed: true,
-              updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-              createdAt: workData.createdAt || firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
-            await updateStudentStatus(studentId, true, { photoURL: workData.photoURL || '', photoLink: workData.photoLink || '', reason: workData.reason || '' });
-            if (workData.class) await updateClassStats(workData.class);
-            await addLog('upload', studentId, `${workData.name} 上传了作品`);
-            console.log('[Firebase] ✅ 重試成功，作品已儲存');
-            return;
-          } catch (retryErr) {
-            console.warn('[Firebase] 重試失敗:', retryErr.message);
-          }
-        }
-      }
-      // 所有重試都失敗 → 拋出錯誤
-      throw new Error(`雲端儲存失敗：${error.message}`);
-    }
-  }
-
-  // Firebase 未初始化 — 最後手段：localStorage
-  console.warn('[Firebase] Firebase 不可用，使用本地儲存');
+  // 步驟 1：永遠先存 localStorage（秒完成，確保用戶看到成功）
   ldbSaveWork(studentId, workData);
   ldbUpdateStudentStatus(studentId, true, {
     photoURL: workData.photoURL || '',
@@ -628,14 +561,32 @@ async function saveWork(studentId, workData) {
   });
   if (workData.class) {
     let allStudents = [];
-    try {
-      const response = await fetch('data/students.json');
-      if (response.ok) allStudents = await response.json();
-    } catch (e) { /* 使用空陣列 */ }
+    try { const r = await fetch('data/students.json'); if (r.ok) allStudents = await r.json(); } catch (e) {}
     ldbUpdateClassStats(workData.class, allStudents);
   }
-  ldbAddLog('upload', studentId, `${workData.name} 上傳了作品（本地）`);
-  console.log('[LDB] 作品已儲存到本地:', studentId);
+  ldbAddLog('upload', studentId, `${workData.name} 上傳了作品`);
+
+  // 步驟 2：後台同步到 Firestore（不阻塞 UI）
+  if (isFirebaseAvailable()) {
+    const db = getFirestore();
+    const now = firebase.firestore.FieldValue.serverTimestamp();
+    const doc = {
+      studentId: workData.studentId, name: workData.name, class: workData.class,
+      photoURL: workData.photoURL || '', photoLink: workData.photoLink || '',
+      reason: workData.reason || '', completed: true,
+      updatedAt: now, createdAt: workData.createdAt || now
+    };
+    // 不 await — Firestore 在後台同步
+    db.collection('works').doc(studentId).set(doc, { merge: true })
+      .then(() => {
+        console.log('[Firebase] ✅ 雲端同步成功:', studentId);
+        return updateStudentStatus(studentId, true, doc);
+      })
+      .then(() => { if (workData.class) return updateClassStats(workData.class); })
+      .catch(err => console.warn('[Firebase] 雲端同步失敗（將在連線恢復後自動同步）:', err.message));
+  }
+
+  console.log('[SPSS] 作品已儲存:', studentId);
 }
 
 /**
