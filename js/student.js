@@ -362,9 +362,9 @@
       // 使用 Compressor.js 壓縮到更小尺寸
       if (window.Compressor) {
         new Compressor(file, {
-          quality: 0.7,
-          maxWidth: 800,
-          maxHeight: 800,
+          quality: 0.8,
+          maxWidth: 1200,
+          maxHeight: 1200,
           mimeType: 'image/jpeg',
           success(result) {
             if (progressFill) progressFill.style.width = '60%';
@@ -379,14 +379,14 @@
           error(err) {
             console.warn('[Student] Compressor 降級壓縮失敗:', err);
             // 最後手段：Canvas 手動壓縮
-            canvasCompressAndEncode(file, 800, 0.7, progressFill, progressText).then(resolve).catch(reject);
+            canvasCompressAndEncode(file, 1200, 0.8, progressFill, progressText).then(resolve).catch(reject);
           }
         });
         return;
       }
 
       // 無 Compressor.js：Canvas 手動壓縮
-      canvasCompressAndEncode(file, 800, 0.7, progressFill, progressText).then(resolve).catch(reject);
+      canvasCompressAndEncode(file, 1200, 0.8, progressFill, progressText).then(resolve).catch(reject);
     });
   }
 
