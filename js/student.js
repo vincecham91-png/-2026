@@ -487,14 +487,30 @@
     try {
       let photoURL = currentWork?.photoURL || '';
 
-      // 如果有選擇新檔案：直接壓縮為 base64 存入 Firestore
-      // （Firebase Storage 因 CORS 不可用，base64 直存是最可靠的路徑）
+      // 如果有選擇新檔案
       if (selectedFile) {
         if (progressBar) progressBar.classList.add('upload-progress--active');
 
-        S.showToast && S.showToast('正在處理圖片...', 'info');
-        photoURL = await compressAndEncodeForFirestore(selectedFile, progressFill, progressText);
-        console.log('[Student] ✅ base64 編碼完成:', (photoURL.length / 1024).toFixed(1) + 'KB');
+        // 路徑 A：上傳到 Firebase Storage（返回短 URL，最優）
+        // 路徑 B：Storage 失敗 → 壓縮為 base64 直存 Firestore
+        S.showToast && S.showToast('正在上傳...', 'info');
+        try {
+          photoURL = await S.uploadImage(selectedFile, currentStudent.studentClass, currentStudent.studentId, (pct) => {
+            if (progressFill) progressFill.style.width = pct + '%';
+            if (progressText) progressText.textContent = pct + '%';
+          });
+          console.log('[Student] ✅ 上傳完成');
+        } catch (e) {
+          console.warn('[Student] Storage 失敗，降級到 base64:', e.message);
+          S.showToast && S.showToast('使用備用通道...', 'info');
+          photoURL = await compressAndEncodeForFirestore(selectedFile, progressFill, progressText);
+        }
+
+        // 安全檢查：確保不是 blob URL（跨設備不可用）
+        if (photoURL && photoURL.startsWith('blob:')) {
+          console.warn('[Student] 偵測到 blob URL，強制使用 base64');
+          photoURL = await compressAndEncodeForFirestore(selectedFile, progressFill, progressText);
+        }
       }
 
       // 步驟 4：構建作品資料

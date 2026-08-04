@@ -587,21 +587,20 @@ async function saveWork(studentId, workData) {
       console.log('[Firebase] 作品已儲存到雲端:', studentId);
       return;
     } catch (error) {
-      console.warn('[Firebase] 雲端儲存失敗，降級到本地儲存:', error.message);
+      console.error('[Firebase] 雲端儲存失敗:', error);
+      // 不再靜默降級到 localStorage — 讓上層（student.js）決定如何處理
+      throw new Error(`雲端儲存失敗：${error.message}`);
     }
   }
 
-  // localStorage 本地降級方案
+  // Firebase 未初始化 — 最後手段：localStorage
+  console.warn('[Firebase] Firebase 不可用，使用本地儲存');
   ldbSaveWork(studentId, workData);
-
-  // 更新學生完成狀態
   ldbUpdateStudentStatus(studentId, true, {
     photoURL: workData.photoURL || '',
     photoLink: workData.photoLink || '',
     reason: workData.reason || ''
   });
-
-  // 更新班級統計
   if (workData.class) {
     let allStudents = [];
     try {
@@ -610,8 +609,6 @@ async function saveWork(studentId, workData) {
     } catch (e) { /* 使用空陣列 */ }
     ldbUpdateClassStats(workData.class, allStudents);
   }
-
-  // 記錄日誌
   ldbAddLog('upload', studentId, `${workData.name} 上傳了作品（本地）`);
   console.log('[LDB] 作品已儲存到本地:', studentId);
 }
@@ -1072,30 +1069,67 @@ async function searchStudents(query) {
 // ========================================
 
 /**
- * 上傳圖片（優先使用 base64 直存 Firestore，繞過 Storage CORS 問題）
+ * 上傳圖片 — Storage 優先，失敗時降級到 base64
  *
- * 策略：Firebase Storage 在 GitHub Pages 部署時因 CORS 無法使用，
- * 因此預設使用 base64 編碼存入 Firestore，確保跨設備可存取。
- * Storage 路徑保留為可選項，當 CORS 修復後可自動使用。
+ * 路徑 A：Firebase Storage → 返回短下載 URL（節省 Firestore 配額）
+ * 路徑 B：base64 直存 Firestore（Storage CORS 未修復時的可靠降級方案）
  *
  * @param {File} file - 圖片檔案
  * @param {string} className - 班級
  * @param {string} studentId - 學號
  * @param {Function} onProgress - 進度回調 (percentage)
- * @returns {Promise<string>} base64 data URL 或 Storage 下載 URL
+ * @returns {Promise<string>} Storage 下載 URL 或 base64 data URL
  */
 async function uploadImage(file, className, studentId, onProgress) {
-  if (onProgress) onProgress(10);
+  if (onProgress) onProgress(5);
 
-  // 預設路徑：base64 直存（可靠、無 CORS 問題、跨設備可存取）
-  // Firebase Storage 因 CORS 不可用，直接跳過以避免長時間等待
+  // 路徑 A：Firebase Storage（主要路徑）
+  if (isFirebaseAvailable()) {
+    const storage = getStorage();
+    if (storage) {
+      try {
+        const extension = file.name.split('.').pop().toLowerCase();
+        const path = `images/${className}/${studentId}/photo_${Date.now()}.${extension}`;
+        const storageRef = storage.ref(path);
+        const uploadTask = storageRef.put(file);
+
+        // Promise.race 加超時保護：CORS 失敗時 SDK 可能掛起而非 reject
+        const UPLOAD_TIMEOUT = 15000;
+        const result = await Promise.race([
+          new Promise((resolve, reject) => {
+            uploadTask.on('state_changed',
+              (snap) => {
+                const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+                if (onProgress) onProgress(pct);
+              },
+              (err) => reject(err),
+              () => resolve(uploadTask.snapshot.ref)
+            );
+          }),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Storage 上傳超時')), UPLOAD_TIMEOUT)
+          )
+        ]);
+
+        const downloadURL = await result.getDownloadURL();
+        if (onProgress) onProgress(100);
+        console.log('[Storage] ✅ 上傳成功:', downloadURL.substring(0, 60) + '...');
+        return downloadURL;
+      } catch (storageError) {
+        console.warn('[Storage] Cloud Storage 失敗，降級到 base64:', storageError.message);
+      }
+    }
+  }
+
+  // 路徑 B：base64 降級（Firestore 直存，跨設備可存取）
+  if (onProgress) onProgress(50);
   try {
     const base64 = await fileToBase64(file);
     if (onProgress) onProgress(100);
-    console.log('[Storage] ✅ base64 編碼完成:', studentId, '-', (base64.length / 1024).toFixed(1) + 'KB');
+    console.log('[Storage] ⚠️ 降級 base64:', studentId, '-', (base64.length / 1024).toFixed(1) + 'KB');
     return base64;
   } catch (e) {
-    console.warn('[Storage] base64 編碼失敗:', e.message);
+    console.error('[Storage] base64 編碼失敗:', e.message);
     throw new Error('圖片處理失敗');
   }
 }
