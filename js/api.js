@@ -85,30 +85,50 @@ const API = {
 async function uploadImage(file, className, studentId, onProgress) {
   if (onProgress) onProgress(5);
 
-  // 路徑 A：Cloudflare Worker → R2（最快，無 CORS）
+  // 先壓縮（減少上傳頻寬）
+  if (onProgress) onProgress(10);
+  const compressed = await compressToBase64(file, 1200, 0.8, (pct) => {
+    if (onProgress) onProgress(10 + Math.round(pct * 0.3));
+  });
+  console.log('[API] 壓縮完成:', (compressed.length / 1024).toFixed(1) + 'KB');
+
+  // 上傳到 Cloudflare Worker KV（永久雲端儲存）
   const workerOk = await API.isAvailable();
   if (workerOk) {
     try {
-      if (onProgress) onProgress(20);
-      const result = await API.uploadImage(file, className, studentId);
-      if (result.success && result.url) {
-        if (onProgress) onProgress(100);
-        console.log('[API] ✅ R2 上傳成功:', result.url.substring(0, 60) + '...');
-        return result.url;
+      if (onProgress) onProgress(50);
+      // 將 base64 轉回 Blob 上傳
+      const blob = await (await fetch(compressed)).blob();
+      const form = new FormData();
+      form.append('file', blob, 'photo.jpg');
+      form.append('class', className);
+      form.append('studentId', studentId);
+
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch(`${API.BASE_URL}/api/upload`, {
+        method: 'POST', body: form, signal: controller.signal
+      });
+      clearTimeout(t);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.url) {
+          if (onProgress) onProgress(100);
+          console.log('[API] ✅ KV 雲端儲存成功:', data.url.substring(0, 60) + '...');
+          return data.url;
+        }
       }
+      console.warn('[API] KV 上傳失敗，使用 base64');
     } catch (e) {
-      console.warn('[API] R2 不可用，使用 base64');
+      console.warn('[API] Worker 不可用，使用 base64:', e.message);
     }
   }
 
-  // 路徑 B：Canvas 壓縮 → base64（這一步是必須的！原始照片太大）
-  if (onProgress) onProgress(20);
-  const base64 = await compressToBase64(file, 1000, 0.75, (pct) => {
-    if (onProgress) onProgress(20 + Math.round(pct * 0.7));
-  });
+  // 降級：base64 直存 Firestore（Worker 不可用時）
   if (onProgress) onProgress(100);
-  console.log('[API] ✅ base64 編碼完成:', studentId, '-', (base64.length / 1024).toFixed(1) + 'KB');
-  return base64;
+  console.log('[API] ⚠️ 降級 base64:', studentId, '-', (compressed.length / 1024).toFixed(1) + 'KB');
+  return compressed;
 }
 
 /**

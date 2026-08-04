@@ -1,17 +1,13 @@
 name = "star-photo-api"
 main = "src/index.js"
 compatibility_date = "2026-01-01"
-compatibility_flags = ["nodejs_compat"]
 
-# R2 圖片儲存 — 執行 "npx wrangler r2 bucket create star-photo-uploads" 前
-# 需先在 https://dash.cloudflare.com 手動啟用 R2 服務（一次性）
-# 啟用後取消下行註解並重新部署：
-# [[r2_buckets]]
-# binding = "PHOTOS"
-# bucket_name = "star-photo-uploads"
+# KV 圖片儲存（無需 R2 手動啟用）
+[[kv_namespaces]]
+binding = "PHOTOS"
+id = "4bee2824474948128e1b468b3c52b8d5"
 
 # 環境變數
 [vars]
-FIREBASE_PROJECT_ID = "starphoto2026-397c3"
 API_KEY = "star-teacher-key-2026"
 CORS_ORIGIN = "https://vincecham91-png.github.io"
