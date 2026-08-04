@@ -77,13 +77,18 @@ const API = {
 // ========================================
 
 /**
- * 上傳圖片（Worker R2 優先 → Firebase Storage → base64 降級）
+ * 上傳圖片（Worker R2 優先 → base64 直存 Firestore）
+ *
+ * 注意：Firebase Storage CORS 從未在 GitHub Pages 上成功，
+ * 因此跳過 Storage 路徑以節省 15 秒等待時間。
+ * 日後若 CORS 修復，可恢復三路徑流程。
  */
 async function uploadImage(file, className, studentId, onProgress) {
   if (onProgress) onProgress(5);
 
   // 路徑 A：Cloudflare Worker → R2（最快，無 CORS）
-  if (await API.isAvailable()) {
+  const workerOk = await API.isAvailable();
+  if (workerOk) {
     try {
       if (onProgress) onProgress(20);
       const result = await API.uploadImage(file, className, studentId);
@@ -93,39 +98,21 @@ async function uploadImage(file, className, studentId, onProgress) {
         return result.url;
       }
     } catch (e) {
-      console.warn('[API] R2 上傳失敗，嘗試 Firebase Storage:', e.message);
+      console.warn('[API] R2 不可用（需啟用），直接使用 base64');
     }
   }
 
-  // 路徑 B：Firebase Storage（需要 CORS 配置，15s timeout）
-  if (window.SPSS._originalUploadImage) {
-    try {
-      if (onProgress) onProgress(10);
-      const url = await window.SPSS._originalUploadImage(file, className, studentId, onProgress);
-      if (url && !url.startsWith('blob:')) {
-        return url;
-      }
-    } catch (e) {
-      console.warn('[API] Storage 上傳也失敗:', e.message);
-    }
-  }
-
-  // 路徑 C：base64 降級（最後手段）
-  if (onProgress) onProgress(50);
-  try {
-    const base64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(new Error('檔案讀取失敗'));
-      reader.readAsDataURL(file);
-    });
-    if (onProgress) onProgress(100);
-    console.log('[API] ⚠️ 降級 base64:', studentId, '-', (base64.length / 1024).toFixed(1) + 'KB');
-    return base64;
-  } catch (e) {
-    console.error('[API] base64 編碼失敗:', e.message);
-    throw new Error('圖片處理失敗');
-  }
+  // 路徑 B：base64 直存 Firestore（可靠，約 2-5 秒）
+  if (onProgress) onProgress(30);
+  const base64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => { if (onProgress) onProgress(80); resolve(reader.result); };
+    reader.onerror = () => reject(new Error('檔案讀取失敗'));
+    reader.readAsDataURL(file);
+  });
+  if (onProgress) onProgress(100);
+  console.log('[API] ✅ base64 編碼完成:', studentId, '-', (base64.length / 1024).toFixed(1) + 'KB');
+  return base64;
 }
 
 // ========================================
@@ -133,21 +120,11 @@ async function uploadImage(file, className, studentId, onProgress) {
 // ========================================
 
 function initApiClient() {
-  // 保存原始的 uploadImage（來自 firebase.js）
-  if (window.SPSS.uploadImage && !window.SPSS._originalUploadImage) {
-    window.SPSS._originalUploadImage = window.SPSS.uploadImage;
-  }
-
-  // 覆蓋為新的三路徑版本
+  // 覆蓋 firebase.js 的 uploadImage（跳過 Storage CORS 等待）
   window.SPSS.uploadImage = uploadImage;
 
-  // 檢查 Worker 可用性（非阻塞）
   API.isAvailable().then(ok => {
-    if (ok) {
-      console.log('[API] ✅ Cloudflare Worker 可用 — 圖片上傳將使用 R2');
-    } else {
-      console.log('[API] ⚠️ Worker 不可用 — 使用 Firebase Storage 或 base64');
-    }
+    console.log(ok ? '[API] ✅ Cloudflare Worker 可用' : '[API] ⚠️ Worker 不可用，使用 base64');
   });
 }
 
