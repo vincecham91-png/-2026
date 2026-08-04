@@ -1,10 +1,11 @@
 /**
  * Star Photo Share System
  * Teacher JS - 教师后台逻辑
- * Version 1.0
- * 2026-07-17
+ * Version 3.0
+ * 2026-08-04
  *
  * 功能：Dashboard 统计、学生列表、作品查看、搜索、CSV 下载、呈堂模式
+ * v3: 重構初始化流程 — 本地 JSON + Firestore works 為數據源，過濾診斷文檔
  */
 
 (function () {
@@ -25,28 +26,36 @@
   let charts = {};
 
   // ========================================
+  // DOM 輔助：設定元素文字
+  // ========================================
+  function setVal(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
+
+  // ========================================
   // 初始化
   // ========================================
   async function init() {
-    console.log('[Teacher] 教师后台初始化 v2');
+    console.log('[Teacher] 教师后台初始化 v3');
 
     // 检查权限
-    const hasPermission = await checkPermission();
+    var hasPermission = await checkPermission();
     if (!hasPermission) return;
 
     // 先綁定事件，確保 UI 立即可互動
     bindEvents();
 
-    // 加载数据（不阻塞 UI）
-    await Promise.all([
-      loadDashboardStats(),
-      loadClassStats(),
-      loadStudents(),
-      loadWorks()
-    ]);
-
-    // 🔧 強制合併 localStorage 狀態到已載入的學生列表
-    forceMergeLocalStatus();
+    // 加載數據（逐步執行，確保每個步驟完成）
+    try {
+      await loadStudents();    // 1. 先載入學生列表（從本地 JSON + works）
+      await loadWorks();       // 2. 載入作品列表（從 Firestore）
+      await mergeWorksToStudents(); // 3. 將作品完成狀態合併到學生列表
+      await loadDashboardStats();   // 4. 計算並渲染儀表板統計
+      await loadClassStats();       // 5. 計算班級統計
+    } catch (e) {
+      console.error('[Teacher] 初始化失敗:', e);
+    }
 
     // 啟動即時監聽（學生上傳後儀表板自動更新）
     listenToWorks();
@@ -55,7 +64,7 @@
     renderCharts();
     renderStudentsTable(filteredStudents);
 
-    console.log('[Teacher] 教师后台初始化完成，已完成學生:', filteredStudents.filter(function(s){return s.completed||s.photoURL||s.photoLink;}).length);
+    console.log('[Teacher] 初始化完成，已完成學生:', filteredStudents.filter(function(s){return s.completed||s.photoURL||s.photoLink;}).length);
   }
 
   /**
@@ -150,70 +159,41 @@
   // ========================================
   async function loadDashboardStats() {
     try {
-      let stats = { totalStudents: 0, completedCount: 0, incompleteCount: 0, completionRate: 0 };
+      var totalStudents = allStudents.length;
+      var worksCompleted = 0;
 
-      if (S.getOverviewStats) {
-        try {
-          stats = await S.getOverviewStats();
-        } catch (e) {}
+      // 從 allWorks 計算實際完成人數（過濾診斷文檔）
+      if (allWorks && allWorks.length > 0) {
+        var ids = {};
+        allWorks.forEach(function(w) {
+          var sid = w.studentId || w.id;
+          if (sid && !sid.startsWith('__')) ids[sid] = true;
+        });
+        worksCompleted = Object.keys(ids).length;
+        console.log('[Teacher] 🔧 works 集合統計: ' + worksCompleted + ' 人已完成');
       }
 
-      // 🔧 從 Firestore works 集合獲取已完成學生（最可靠的數據來源）
-      let worksCompleted = 0;
-      if (S.getAllWorks) {
-        try {
-          const works = await S.getAllWorks();
-          if (works && works.length > 0) {
-            // 用 Set 去重（一個學生可能有多件作品）
-            var ids = new Set();
-            works.forEach(function(w) { if (w.studentId || w.id) ids.add(w.studentId || w.id); });
-            worksCompleted = ids.size;
-            console.log('[Teacher] 🔧 works 集合統計: ' + worksCompleted + ' 人已完成');
-          }
-        } catch (e) {}
-      }
+      // 合併 localStorage 狀態
+      var localCompleted = 0;
+      try {
+        var statusMap = readLocalStudentStatus();
+        Object.keys(statusMap).forEach(function(sid) {
+          if (statusMap[sid] && statusMap[sid].completed) localCompleted++;
+        });
+      } catch (e) {}
 
-      // 本地降级：從 JSON 載入學生總數
-      if (stats.totalStudents === 0) {
-        try {
-          const response = await fetch('data/students.json');
-          if (response.ok) {
-            const students = await response.json();
-            stats.totalStudents = students.length;
-
-            // 合併 localStorage 完成狀態
-            const statusMap = readLocalStudentStatus();
-            var localCompleted = students.filter(function(s) {
-              var st = statusMap[s.studentId];
-              return (st && st.completed) || s.completed;
-            }).length;
-
-            // 以 Firestore works 為準，localStorage 為輔
-            stats.completedCount = Math.max(worksCompleted, localCompleted);
-            stats.incompleteCount = stats.totalStudents - stats.completedCount;
-            stats.completionRate = stats.totalStudents > 0
-              ? Math.round((stats.completedCount / stats.totalStudents) * 100)
-              : 0;
-          }
-        } catch (e) {}
-      } else {
-        // Firestore students 有數據時，用 works 補充
-        stats.completedCount = Math.max(stats.completedCount, worksCompleted);
-        stats.incompleteCount = stats.totalStudents - stats.completedCount;
-        stats.completionRate = stats.totalStudents > 0
-          ? Math.round((stats.completedCount / stats.totalStudents) * 100)
-          : 0;
-      }
+      // 以 works 為準（雲端數據），localStorage 為輔
+      var completedCount = Math.max(worksCompleted, localCompleted);
+      var incompleteCount = totalStudents - completedCount;
+      var rate = totalStudents > 0 ? Math.round((completedCount / totalStudents) * 100) : 0;
 
       // 更新 UI
-      const setVal = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = val;
-      };
-      setVal('statTotalStudents', stats.totalStudents);
-      setVal('statCompleted', stats.completedCount);
-      setVal('statRate', stats.completionRate + '%');
-      setVal('statIncomplete', stats.incompleteCount);
+      setVal('statTotalStudents', totalStudents);
+      setVal('statCompleted', completedCount);
+      setVal('statRate', rate + '%');
+      setVal('statIncomplete', incompleteCount);
+
+      console.log('[Teacher] 儀表板: ' + totalStudents + ' 學生, ' + completedCount + ' 已完成, ' + rate + '%');
 
     } catch (error) {
       console.error('[Teacher] 统计加载失败:', error);
@@ -296,41 +276,66 @@
   // ========================================
   async function loadStudents() {
     try {
-      // 優先嘗試 Firebase / localStorage 合併（firebase.js 自動降級）
-      if (S.searchStudents) {
-        try {
-          allStudents = await S.searchStudents('');
-        } catch (e) {
-          console.warn('[Teacher] searchStudents 失敗:', e);
-        }
+      // 從本地 JSON 加載（Firestore students 集合可能為空）
+      var response = await fetch('data/students.json');
+      if (!response.ok) {
+        console.warn('[Teacher] 無法載入 students.json');
+        allStudents = [];
+        filteredStudents = [];
+        return;
       }
 
-      // 如果 searchStudents 返回空，手動從本地 JSON + localStorage 合併
-      if (allStudents.length === 0) {
-        try {
-          const response = await fetch('data/students.json');
-          if (response.ok) {
-            const rawStudents = await response.json();
-            const statusMap = readLocalStudentStatus();
-            allStudents = rawStudents.map(s => {
-              const status = statusMap[s.studentId];
-              if (status) {
-                return { ...s, ...status, id: s.studentId };
-              }
-              return { ...s, id: s.studentId };
-            });
-            console.log('[Teacher] 本地模式載入學生:', allStudents.length, '人，已完成:', allStudents.filter(function(s){return s.completed;}).length);
-          }
-        } catch (e) {
-          console.warn('[Teacher] 本地學生載入失敗:', e);
-        }
-      }
+      var rawStudents = await response.json();
+      var statusMap = readLocalStudentStatus();
 
-      filteredStudents = [...allStudents];
+      // 合併 localStorage 完成狀態
+      allStudents = rawStudents.map(function(s) {
+        var status = statusMap[s.studentId];
+        if (status && (status.completed || status.photoURL || status.photoLink)) {
+          return Object.assign({}, s, status, { id: s.studentId });
+        }
+        return Object.assign({}, s, { id: s.studentId });
+      });
+
+      filteredStudents = allStudents.slice();
+      console.log('[Teacher] 學生載入: ' + allStudents.length + ' 人');
 
     } catch (error) {
       console.error('[Teacher] 学生列表加载失败:', error);
+      allStudents = [];
+      filteredStudents = [];
     }
+  }
+
+  /**
+   * 將 Firestore works 的完成狀態合併到 allStudents
+   * 雲端數據優先於 localStorage
+   */
+  function mergeWorksToStudents() {
+    if (!allWorks || allWorks.length === 0) return;
+
+    var mergedCount = 0;
+    allWorks.forEach(function(w) {
+      var sid = w.studentId || w.id;
+      if (!sid || sid.startsWith('__')) return; // 過濾診斷文檔
+
+      var student = allStudents.find(function(s) { return s.studentId === sid; });
+      if (student) {
+        if (!student.completed) mergedCount++;
+        student.completed = true;
+        student.photoURL = student.photoURL || w.photoURL || '';
+        student.photoLink = student.photoLink || w.photoLink || '';
+        student.reason = student.reason || w.reason || '';
+        student.uploadTime = student.uploadTime || w.updatedAt || w.createdAt || '';
+      }
+    });
+
+    if (mergedCount > 0) {
+      console.log('[Teacher] 🔧 works 合併: ' + mergedCount + ' 名學生標記為完成');
+    }
+
+    // 同步更新 filteredStudents
+    filteredStudents = allStudents.slice();
   }
 
   /**
@@ -376,7 +381,13 @@
     try {
       if (S.getAllWorks) {
         try {
-          allWorks = await S.getAllWorks();
+          var works = await S.getAllWorks();
+          // 過濾診斷文檔
+          allWorks = works.filter(function(w) {
+            var sid = w.studentId || w.id || '';
+            return !sid.startsWith('__');
+          });
+          console.log('[Teacher] 作品載入: ' + allWorks.length + ' 件');
         } catch (e) {
           console.warn('[Teacher] getAllWorks 失敗:', e);
         }
@@ -394,14 +405,36 @@
    * 實時監聽作品變更 — 學生上傳後教師儀表板自動更新
    */
   function listenToWorks() {
-    if (!S.firestoreDB) return;
+    if (!S.firestoreDB) {
+      console.warn('[Teacher] Firestore 未初始化，使用輪詢備援');
+      // 備援：每 30 秒輪詢
+      setInterval(async function() {
+        try {
+          var works = await S.getAllWorks();
+          allWorks = works.filter(function(w) {
+            var sid = w.studentId || w.id || '';
+            return !sid.startsWith('__');
+          });
+          mergeWorksToStudents();
+          updateDashboardFromWorks();
+          renderStudentsTable(filteredStudents);
+        } catch(e) {}
+      }, 30000);
+      return;
+    }
+
     try {
       const db = S.firestoreDB;
       db.collection('works').onSnapshot(function(snapshot) {
-        var updated = [];
+        var hasChange = false;
         snapshot.docChanges().forEach(function(change) {
           var data = change.doc.data();
           data.id = change.doc.id;
+
+          // 過濾診斷文檔
+          var sid = data.studentId || data.id || '';
+          if (sid.startsWith('__')) return;
+
           if (change.type === 'added' || change.type === 'modified') {
             // 更新或新增
             var existingIdx = -1;
@@ -413,29 +446,46 @@
             } else {
               allWorks.push(data);
             }
-            console.log('[Teacher] 🔄 即時更新作品:', data.name);
+            hasChange = true;
+            console.log('[Teacher] 🔄 即時更新作品:', data.name || sid);
+
+            // 標記對應學生為已完成
+            var student = allStudents.find(function(s) { return s.studentId === sid; });
+            if (student) {
+              student.completed = true;
+              student.photoURL = student.photoURL || data.photoURL || '';
+              student.reason = student.reason || data.reason || '';
+            }
           } else if (change.type === 'removed') {
             allWorks = allWorks.filter(function(w) { return w.id !== data.id; });
+            hasChange = true;
           }
         });
+
+        if (!hasChange) return;
 
         // 重新整理排序
         allWorks.sort(function(a, b) {
           return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
         });
 
-        // 更新儀表板統計
+        filteredStudents = allStudents.slice();
         updateDashboardFromWorks();
-        // 更新學生列表（如果當前正在顯示）
-        var activeSection = document.querySelector('.dashboard-section[style*="block"]') || document.getElementById('section-dashboard');
-        if (activeSection && activeSection.id === 'section-students') {
-          renderStudentsTable(filteredStudents);
-        }
+        renderStudentsTable(filteredStudents);
       }, function(error) {
         console.warn('[Teacher] 即時監聽失敗，使用輪詢備援:', error.message);
         // 備援：每 30 秒輪詢
         setInterval(async function() {
-          try { allWorks = await S.getAllWorks(); updateDashboardFromWorks(); } catch(e) {}
+          try {
+            var works = await S.getAllWorks();
+            allWorks = works.filter(function(w) {
+              var sid = w.studentId || w.id || '';
+              return !sid.startsWith('__');
+            });
+            mergeWorksToStudents();
+            updateDashboardFromWorks();
+            renderStudentsTable(filteredStudents);
+          } catch(e) {}
         }, 30000);
       });
       console.log('[Teacher] 🔄 即時監聽已啟動');
@@ -451,19 +501,14 @@
     var completedIds = {};
     allWorks.forEach(function(w) {
       var sid = w.studentId || w.id;
-      if (sid) completedIds[sid] = true;
+      if (sid && !sid.startsWith('__')) completedIds[sid] = true;
     });
     var completedCount = Object.keys(completedIds).length;
-
-    // 更新統計卡片
-    var setVal = function(id, val) {
-      var el = document.getElementById(id);
-      if (el) el.textContent = val;
-    };
     var total = allStudents.length || 101;
+
     setVal('statCompleted', completedCount);
     setVal('statIncomplete', total - completedCount);
-    setVal('statRate', Math.round((completedCount / total) * 100) + '%');
+    setVal('statRate', total > 0 ? Math.round((completedCount / total) * 100) + '%' : '0%');
     setVal('statTotalStudents', total);
   }
 
