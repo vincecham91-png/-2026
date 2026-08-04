@@ -75,7 +75,7 @@ async function handleUpload(request, env) {
 // ========================================
 async function handleGetPhoto(request, env) {
   const url = new URL(request.url);
-  const key = url.pathname.replace('/api/photos/', '');
+  const key = decodeURIComponent(url.pathname.replace('/api/photos/', ''));
 
   if (!key) return json({ error: '缺少 key' }, 400);
 
@@ -100,7 +100,7 @@ async function handleGetPhoto(request, env) {
 // ========================================
 async function handleGetPhotoRaw(request, env) {
   const url = new URL(request.url);
-  const key = url.pathname.replace('/api/raw/', '');
+  const key = decodeURIComponent(url.pathname.replace('/api/raw/', ''));
   if (!key) return json({ error: '缺少 key' }, 400);
 
   const dataUrl = await env.PHOTOS.get(key);
