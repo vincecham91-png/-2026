@@ -31,7 +31,7 @@ const API = {
     formData.append('studentId', studentId);
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
+    const timeout = setTimeout(() => controller.abort(), 3000);
 
     try {
       const url = `${this.BASE_URL}/api/upload`;

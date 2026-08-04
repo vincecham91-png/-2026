@@ -43,6 +43,12 @@ function errorResponse(message, status = 400) {
 // ========================================
 
 async function handleUpload(request, env) {
+  // ⚠️ 先檢查 R2，再讀取檔案（避免學生上傳整個檔案後才發現 R2 未設定）
+  const bucket = env.PHOTOS;
+  if (!bucket) {
+    return errorResponse('R2 儲存尚未設定。請在 Cloudflare Dashboard 啟用 R2。', 503);
+  }
+
   const formData = await request.formData();
   const file = formData.get('file');
   const className = formData.get('class') || 'unknown';
@@ -50,20 +56,12 @@ async function handleUpload(request, env) {
 
   if (!file) return errorResponse('缺少檔案', 400);
 
-  // 驗證檔案大小
   if (file.size > CONFIG.MAX_FILE_SIZE) {
     return errorResponse(`檔案過大，上限 ${CONFIG.MAX_FILE_SIZE / 1024 / 1024}MB`, 400);
   }
 
-  // 驗證檔案類型
   if (!CONFIG.ALLOWED_TYPES.includes(file.type)) {
     return errorResponse('不支援的檔案格式（僅限 JPG、PNG、WEBP）', 400);
-  }
-
-  // 上傳到 R2
-  const bucket = env.PHOTOS;
-  if (!bucket) {
-    return errorResponse('R2 儲存尚未設定。請在 Cloudflare Dashboard 啟用 R2。', 503);
   }
 
   const ext = file.name ? file.name.split('.').pop().toLowerCase() : 'jpg';
