@@ -1,11 +1,13 @@
 name = "star-photo-api"
 main = "src/index.js"
 compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat"]
 
-# R2 圖片儲存（無 CORS 問題，全球 CDN）
-[[r2_buckets]]
-binding = "PHOTOS"
-bucket_name = "star-photo-uploads"
+# R2 圖片儲存（需先在 Cloudflare Dashboard 啟用 R2）
+# 啟用後取消註解下行：
+# [[r2_buckets]]
+# binding = "PHOTOS"
+# bucket_name = "star-photo-uploads"
 
 # 環境變數
 [vars]
