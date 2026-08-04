@@ -1,0 +1,14 @@
+name = "star-photo-api"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+# R2 圖片儲存（無 CORS 問題，全球 CDN）
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "star-photo-uploads"
+
+# 環境變數
+[vars]
+FIREBASE_PROJECT_ID = "starphoto2026-397c3"
+API_KEY = "star-teacher-key-2026"
+CORS_ORIGIN = "https://vincecham91-png.github.io"
