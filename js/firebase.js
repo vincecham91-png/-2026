@@ -587,8 +587,33 @@ async function saveWork(studentId, workData) {
       console.log('[Firebase] 作品已儲存到雲端:', studentId);
       return;
     } catch (error) {
-      console.error('[Firebase] 雲端儲存失敗:', error);
-      // 不再靜默降級到 localStorage — 讓上層（student.js）決定如何處理
+      console.error('[Firebase] 雲端儲存失敗:', error.message);
+
+      // Firestore 短暫離線時重試（最多 3 次，每次等 2 秒）
+      if (error.message && error.message.includes('offline')) {
+        for (let retry = 0; retry < 3; retry++) {
+          console.log(`[Firebase] 重試儲存 (${retry + 1}/3)...`);
+          await new Promise(r => setTimeout(r, 2000));
+          try {
+            const db = getFirestore();
+            await db.collection('works').doc(studentId).set({
+              studentId: workData.studentId, name: workData.name, class: workData.class,
+              photoURL: workData.photoURL || '', photoLink: workData.photoLink || '',
+              reason: workData.reason || '', completed: true,
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+              createdAt: workData.createdAt || firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            await updateStudentStatus(studentId, true, { photoURL: workData.photoURL || '', photoLink: workData.photoLink || '', reason: workData.reason || '' });
+            if (workData.class) await updateClassStats(workData.class);
+            await addLog('upload', studentId, `${workData.name} 上传了作品`);
+            console.log('[Firebase] ✅ 重試成功，作品已儲存');
+            return;
+          } catch (retryErr) {
+            console.warn('[Firebase] 重試失敗:', retryErr.message);
+          }
+        }
+      }
+      // 所有重試都失敗 → 拋出錯誤
       throw new Error(`雲端儲存失敗：${error.message}`);
     }
   }

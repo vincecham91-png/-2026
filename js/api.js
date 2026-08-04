@@ -103,7 +103,7 @@ async function uploadImage(file, className, studentId, onProgress) {
 
   // 路徑 B：Canvas 壓縮 → base64（這一步是必須的！原始照片太大）
   if (onProgress) onProgress(20);
-  const base64 = await compressToBase64(file, 1200, 0.8, (pct) => {
+  const base64 = await compressToBase64(file, 1000, 0.75, (pct) => {
     if (onProgress) onProgress(20 + Math.round(pct * 0.7));
   });
   if (onProgress) onProgress(100);

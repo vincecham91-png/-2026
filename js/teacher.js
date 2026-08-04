@@ -155,6 +155,20 @@
         } catch (e) {}
       }
 
+      // 🔧 從 works 集合補充完成數（students 集合可能未同步）
+      if (stats.completedCount === 0 && S.getAllWorks) {
+        try {
+          const works = await S.getAllWorks();
+          if (works && works.length > 0) {
+            stats.completedCount = works.length;
+            stats.incompleteCount = Math.max(0, stats.totalStudents - works.length);
+            stats.completionRate = stats.totalStudents > 0
+              ? Math.round((works.length / stats.totalStudents) * 100) : 0;
+            console.log('[Teacher] 🔧 從 works 集合補充統計: ' + works.length + ' 件作品');
+          }
+        } catch (e) {}
+      }
+
       // 本地降级：合併 localStorage 完成狀態
       if (stats.totalStudents === 0) {
         try {
