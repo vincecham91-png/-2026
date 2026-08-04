@@ -48,6 +48,9 @@
     // 🔧 強制合併 localStorage 狀態到已載入的學生列表
     forceMergeLocalStatus();
 
+    // 啟動即時監聽（學生上傳後儀表板自動更新）
+    listenToWorks();
+
     // 渲染
     renderCharts();
     renderStudentsTable(filteredStudents);
@@ -358,7 +361,6 @@
   // ========================================
   async function loadWorks() {
     try {
-      // 優先嘗試 Firebase（firebase.js 自動降級到 localStorage）
       if (S.getAllWorks) {
         try {
           allWorks = await S.getAllWorks();
@@ -367,16 +369,89 @@
         }
       }
 
-      // 如果還是空的，直接從 localStorage 讀取
       if (allWorks.length === 0) {
         allWorks = readLocalWorks();
-        if (allWorks.length > 0) {
-          console.log('[Teacher] 直接從 localStorage 讀取作品:', allWorks.length, '件');
-        }
       }
     } catch (error) {
       console.error('[Teacher] 作品加载失败:', error);
     }
+  }
+
+  /**
+   * 實時監聽作品變更 — 學生上傳後教師儀表板自動更新
+   */
+  function listenToWorks() {
+    if (!S.firestoreDB) return;
+    try {
+      const db = S.firestoreDB;
+      db.collection('works').onSnapshot(function(snapshot) {
+        var updated = [];
+        snapshot.docChanges().forEach(function(change) {
+          var data = change.doc.data();
+          data.id = change.doc.id;
+          if (change.type === 'added' || change.type === 'modified') {
+            // 更新或新增
+            var existingIdx = -1;
+            for (var i = 0; i < allWorks.length; i++) {
+              if (allWorks[i].id === data.id) { existingIdx = i; break; }
+            }
+            if (existingIdx >= 0) {
+              allWorks[existingIdx] = data;
+            } else {
+              allWorks.push(data);
+            }
+            console.log('[Teacher] 🔄 即時更新作品:', data.name);
+          } else if (change.type === 'removed') {
+            allWorks = allWorks.filter(function(w) { return w.id !== data.id; });
+          }
+        });
+
+        // 重新整理排序
+        allWorks.sort(function(a, b) {
+          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+        });
+
+        // 更新儀表板統計
+        updateDashboardFromWorks();
+        // 更新學生列表（如果當前正在顯示）
+        var activeSection = document.querySelector('.dashboard-section[style*="block"]') || document.getElementById('section-dashboard');
+        if (activeSection && activeSection.id === 'section-students') {
+          renderStudentsTable(filteredStudents);
+        }
+      }, function(error) {
+        console.warn('[Teacher] 即時監聽失敗，使用輪詢備援:', error.message);
+        // 備援：每 30 秒輪詢
+        setInterval(async function() {
+          try { allWorks = await S.getAllWorks(); updateDashboardFromWorks(); } catch(e) {}
+        }, 30000);
+      });
+      console.log('[Teacher] 🔄 即時監聽已啟動');
+    } catch(e) {
+      console.warn('[Teacher] 無法啟動即時監聽:', e.message);
+    }
+  }
+
+  /**
+   * 從 works 集合更新儀表板統計
+   */
+  function updateDashboardFromWorks() {
+    var completedIds = {};
+    allWorks.forEach(function(w) {
+      var sid = w.studentId || w.id;
+      if (sid) completedIds[sid] = true;
+    });
+    var completedCount = Object.keys(completedIds).length;
+
+    // 更新統計卡片
+    var setVal = function(id, val) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+    var total = allStudents.length || 101;
+    setVal('statCompleted', completedCount);
+    setVal('statIncomplete', total - completedCount);
+    setVal('statRate', Math.round((completedCount / total) * 100) + '%');
+    setVal('statTotalStudents', total);
   }
 
   // ========================================
