@@ -552,12 +552,46 @@ async function getStudentWork(studentId) {
  * @returns {Promise<void>}
  */
 async function saveWork(studentId, workData) {
-  // 步驟 1：永遠先存 localStorage（秒完成，確保用戶看到成功）
+  // 步驟 1：嘗試 Firestore（等最多 5 秒）
+  if (isFirebaseAvailable()) {
+    try {
+      const db = getFirestore();
+      const now = firebase.firestore.FieldValue.serverTimestamp();
+      const doc = {
+        studentId: workData.studentId, name: workData.name, class: workData.class,
+        photoURL: workData.photoURL || '', photoLink: workData.photoLink || '',
+        reason: workData.reason || '', completed: true,
+        updatedAt: now, createdAt: workData.createdAt || now
+      };
+
+      // Promise.race: Firestore 寫入 vs 5 秒超時
+      const result = await Promise.race([
+        (async () => {
+          await db.collection('works').doc(studentId).set(doc, { merge: true });
+          await updateStudentStatus(studentId, true, doc);
+          if (workData.class) await updateClassStats(workData.class);
+          await addLog('upload', studentId, `${workData.name} 上傳了作品`);
+          return 'cloud';
+        })(),
+        new Promise(r => setTimeout(() => r('timeout'), 5000))
+      ]);
+
+      if (result === 'cloud') {
+        console.log('[Firebase] ✅ 雲端儲存成功:', studentId);
+        // 同時更新 localStorage 作為備份
+        ldbSaveWork(studentId, workData);
+        return;
+      }
+      console.warn('[Firebase] Firestore 超時，先存本地，後台繼續同步');
+    } catch (error) {
+      console.warn('[Firebase] Firestore 不可用，存本地:', error.message);
+    }
+  }
+
+  // 步驟 2：localStorage 備份（Firestore 失敗或超時）
   ldbSaveWork(studentId, workData);
   ldbUpdateStudentStatus(studentId, true, {
-    photoURL: workData.photoURL || '',
-    photoLink: workData.photoLink || '',
-    reason: workData.reason || ''
+    photoURL: workData.photoURL || '', photoLink: workData.photoLink || '', reason: workData.reason || ''
   });
   if (workData.class) {
     let allStudents = [];
@@ -565,28 +599,29 @@ async function saveWork(studentId, workData) {
     ldbUpdateClassStats(workData.class, allStudents);
   }
   ldbAddLog('upload', studentId, `${workData.name} 上傳了作品`);
-
-  // 步驟 2：後台同步到 Firestore（不阻塞 UI）
-  if (isFirebaseAvailable()) {
-    const db = getFirestore();
-    const now = firebase.firestore.FieldValue.serverTimestamp();
-    const doc = {
-      studentId: workData.studentId, name: workData.name, class: workData.class,
-      photoURL: workData.photoURL || '', photoLink: workData.photoLink || '',
-      reason: workData.reason || '', completed: true,
-      updatedAt: now, createdAt: workData.createdAt || now
-    };
-    // 不 await — Firestore 在後台同步
-    db.collection('works').doc(studentId).set(doc, { merge: true })
-      .then(() => {
-        console.log('[Firebase] ✅ 雲端同步成功:', studentId);
-        return updateStudentStatus(studentId, true, doc);
-      })
-      .then(() => { if (workData.class) return updateClassStats(workData.class); })
-      .catch(err => console.warn('[Firebase] 雲端同步失敗（將在連線恢復後自動同步）:', err.message));
-  }
-
   console.log('[SPSS] 作品已儲存:', studentId);
+
+  // 步驟 3：後台持續重試 Firestore 同步
+  if (isFirebaseAvailable()) {
+    const retrySync = async (retries = 5) => {
+      for (let i = 0; i < retries; i++) {
+        await new Promise(r => setTimeout(r, 3000 * (i + 1))); // 3s, 6s, 9s, 12s, 15s
+        try {
+          const db = getFirestore();
+          await db.collection('works').doc(studentId).set({
+            studentId: workData.studentId, name: workData.name, class: workData.class,
+            photoURL: workData.photoURL || '', photoLink: workData.photoLink || '',
+            reason: workData.reason || '', completed: true,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+          console.log('[Firebase] ✅ 後台同步成功:', studentId);
+          return;
+        } catch (e) { console.warn(`[Firebase] 後台同步重試 ${i+1}/${retries} 失敗`); }
+      }
+      console.error('[Firebase] ❌ 後台同步最終失敗:', studentId);
+    };
+    retrySync(); // 不 await
+  }
 }
 
 /**
