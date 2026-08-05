@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Star Photo Share System
  * Firebase JS - Firebase 数据库操作封装
  * Version 1.0
@@ -573,7 +573,7 @@ async function saveWork(studentId, workData) {
           await addLog('upload', studentId, `${workData.name} 上傳了作品`);
           return 'cloud';
         })(),
-        new Promise(r => setTimeout(() => r('timeout'), 5000))
+        new Promise(r => setTimeout(() => r('timeout'), 15000))
       ]);
 
       if (result === 'cloud') {
@@ -608,15 +608,22 @@ async function saveWork(studentId, workData) {
         await new Promise(r => setTimeout(r, 3000 * (i + 1))); // 3s, 6s, 9s, 12s, 15s
         try {
           const db = getFirestore();
-          await db.collection('works').doc(studentId).set({
+          const now = firebase.firestore.FieldValue.serverTimestamp();
+          const retryDoc = {
             studentId: workData.studentId, name: workData.name, class: workData.class,
             photoURL: workData.photoURL || '', photoLink: workData.photoLink || '',
             reason: workData.reason || '', completed: true,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          }, { merge: true });
+            createdAt: workData.createdAt || now,
+            updatedAt: now
+          };
+          await db.collection('works').doc(studentId).set(retryDoc, { merge: true });
+          try { await updateStudentStatus(studentId, true, retryDoc); } catch (e) {}
+          if (workData.class) {
+            try { await updateClassStats(workData.class); } catch (e) {}
+          }
           console.log('[Firebase] ✅ 後台同步成功:', studentId);
           return;
-        } catch (e) { console.warn(`[Firebase] 後台同步重試 ${i+1}/${retries} 失敗`); }
+        } catch (e) { console.warn('[Firebase] 後台同步重試 ' + (i + 1) + '/' + retries + ' 失敗: ' + e.message); }
       }
       console.error('[Firebase] ❌ 後台同步最終失敗:', studentId);
     };
@@ -739,7 +746,7 @@ async function getAllWorks() {
     try {
       const db = getFirestore();
       const snapshot = await db.collection('works')
-        .orderBy('createdAt', 'desc')
+        .orderBy('updatedAt', 'desc')
         .get();
 
       cloudWorks = snapshot.docs.map(doc => ({
