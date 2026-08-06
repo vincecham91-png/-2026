@@ -120,25 +120,44 @@
         try {
           var teacher = null;
           var cfg = S.TEACHER_CONFIG;
+          var error = null;
 
-          // 1. 先尝试本地教师帐号
-          if (cfg && cfg.password === password &&
-              (username === cfg.username || username === cfg.email)) {
-            teacher = {
-              uid: 'local-teacher-001',
-              email: cfg.email,
-              name: cfg.displayName,
-              role: cfg.role
-            };
-            console.log('[TeacherLogin] 本地帐号验证成功');
-          }
-
-          // 2. 尝试 Supabase Auth
-          if (!teacher && S.teacherLogin) {
+          // 优先尝试 Supabase Auth（真实登录）
+          if (S.teacherLogin) {
             try {
               teacher = await S.teacherLogin(username, password);
+              console.log('[TeacherLogin] Supabase 登入成功:', teacher.email);
             } catch(e) {
+              error = e;
               console.warn('[TeacherLogin] Supabase 登入失败:', e.message);
+            }
+          }
+
+          // 备用：本地验证（仅用于测试）
+          if (!teacher && cfg && cfg.password === password &&
+              (username === cfg.username || username === cfg.email)) {
+            // 尝试从 Supabase 获取真实用户信息
+            if (S.teacherLogin) {
+              try {
+                teacher = await S.teacherLogin(username, password);
+                console.log('[TeacherLogin] 备用通道登入成功:', teacher.email);
+              } catch(e2) {
+                // 如果 Supabase 登录失败，使用本地配置作为备用
+                teacher = {
+                  uid: 'local-teacher-001',
+                  email: cfg.email,
+                  name: cfg.displayName,
+                  role: cfg.role
+                };
+                console.log('[TeacherLogin] 使用本地备用帐号');
+              }
+            } else {
+              teacher = {
+                uid: 'local-teacher-001',
+                email: cfg.email,
+                name: cfg.displayName,
+                role: cfg.role
+              };
             }
           }
 
