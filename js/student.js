@@ -5,7 +5,7 @@
  * 2026-08-03
  *
  * 功能：讀取個人資料、上傳圖片/網址、壓縮圖片、儲存作品、刪除、Session 檢查
- * v1.1: Storage CORS 失敗時降級到 base64 直存 Firestore（跨設備可存取）
+ * v1.1: Storage CORS 失敗時降級到 base64 直存 Supabase（跨設備可存取）
  */
 
 (function () {
@@ -32,10 +32,10 @@
       return;
     }
 
-    // 先綁定事件，確保頁面立即可互動（不等待 Firebase）
+    // 先綁定事件，確保頁面立即可互動（不等待 Supabase）
     bindEvents();
 
-    // 再載入資料（Firebase 查詢不阻塞 UI）
+    // 再載入資料（Supabase 查詢不阻塞 UI）
     await loadProfile();
     await loadExistingWork();
 
@@ -67,13 +67,13 @@
       document.getElementById('profileClass').textContent = currentStudent.studentClass || '-';
       document.getElementById('profileId').textContent = currentStudent.studentId || '-';
 
-      // 嘗試從 Firebase 載入最新資料
+      // 嘗試從 Supabase 載入最新資料
       let student = null;
       if (S.getStudentById) {
         try {
           student = await S.getStudentById(currentStudent.studentId);
         } catch (e) {
-          console.warn('[Student] Firebase 載入學生資料失敗');
+          console.warn('[Student] Supabase 載入學生資料失敗');
         }
       }
 
@@ -131,7 +131,7 @@
         try {
           work = await S.getStudentWork(currentStudent.studentId);
         } catch (e) {
-          console.warn('[Student] Firebase 載入作品失敗');
+          console.warn('[Student] Supabase 載入作品失敗');
         }
       }
 
@@ -281,7 +281,7 @@
 
   /**
    * 壓縮圖片（最長邊 1600px, JPEG 85%）
-   * 用於 Firebase Storage 上傳
+   * 用於 Supabase Storage 上傳
    * @param {File} file - 原始檔案
    * @returns {Promise<File>} 壓縮後的檔案
    */
@@ -346,14 +346,14 @@
   }
 
   /**
-   * 壓縮圖片為小尺寸 base64，用於 Firestore 直存（繞過 Storage CORS）
-   * 目標：最長邊 800px、JPEG 70%、base64 約 50-100KB（遠低於 Firestore 1MB 上限）
+   * 壓縮圖片為小尺寸 base64，用於 Supabase 直存（繞過 Storage CORS）
+   * 目標：最長邊 800px、JPEG 70%、base64 約 50-100KB（遠低於 Supabase 限制）
    * @param {File} file - 原始檔案
    * @param {HTMLElement} progressFill - 進度條填充元素
    * @param {HTMLElement} progressText - 進度文字元素
    * @returns {Promise<string>} base64 data URL
    */
-  async function compressAndEncodeForFirestore(file, progressFill, progressText) {
+  async function compressAndEncodeForSupabase(file, progressFill, progressText) {
     console.log('[Student] 🔧 使用 base64 降級方案（繞過 Storage CORS）');
     if (progressFill) progressFill.style.width = '30%';
     if (progressText) progressText.textContent = '正在壓縮...';
@@ -491,8 +491,8 @@
       if (selectedFile) {
         if (progressBar) progressBar.classList.add('upload-progress--active');
 
-        // 路徑 A：上傳到 Firebase Storage（返回短 URL，最優）
-        // 路徑 B：Storage 失敗 → 壓縮為 base64 直存 Firestore
+        // 路徑 A：上傳到 Supabase Storage（返回短 URL，最優）
+        // 路徑 B：Storage 失敗 → 壓縮為 base64 直存 Supabase
         S.showToast && S.showToast('正在上傳...', 'info');
         try {
           photoURL = await S.uploadImage(selectedFile, currentStudent.studentClass, currentStudent.studentId, (pct) => {
@@ -503,13 +503,13 @@
         } catch (e) {
           console.warn('[Student] Storage 失敗，降級到 base64:', e.message);
           S.showToast && S.showToast('使用備用通道...', 'info');
-          photoURL = await compressAndEncodeForFirestore(selectedFile, progressFill, progressText);
+          photoURL = await compressAndEncodeForSupabase(selectedFile, progressFill, progressText);
         }
 
         // 安全檢查：確保不是 blob URL（跨設備不可用）
         if (photoURL && photoURL.startsWith('blob:')) {
           console.warn('[Student] 偵測到 blob URL，強制使用 base64');
-          photoURL = await compressAndEncodeForFirestore(selectedFile, progressFill, progressText);
+          photoURL = await compressAndEncodeForSupabase(selectedFile, progressFill, progressText);
         }
       }
 
@@ -529,17 +529,17 @@
         workData.createdAt = currentWork.createdAt;
       }
 
-      // 步驟 5：儲存到 Firestore / localStorage（firebase.js 自動降級）
+      // 步驟 5：儲存到 Supabase / localStorage（supabase.js 自動降級）
       if (S.saveWork) {
         try {
           await S.saveWork(currentStudent.studentId, workData);
           console.log('[Student] ✅ 作品儲存成功');
         } catch (e) {
           console.error('[Student] ❌ 儲存失敗（雲端與本地皆無法儲存）:', e);
-          // 如果 Firestore 寫入因文件過大失敗，嘗試再次壓縮
+          // 如果 Supabase 寫入因文件過大失敗，嘗試再次壓縮
           if (e.message && (e.message.includes('too large') || e.message.includes('size'))) {
             S.showToast && S.showToast('圖片過大，正在重新壓縮...', 'info');
-            photoURL = await compressAndEncodeForFirestore(selectedFile, progressFill, progressText);
+            photoURL = await compressAndEncodeForSupabase(selectedFile, progressFill, progressText);
             workData.photoURL = photoURL;
             try {
               await S.saveWork(currentStudent.studentId, workData);
@@ -630,7 +630,7 @@
         try {
           await S.deleteWork(currentStudent.studentId, currentWork?.photoURL);
         } catch (e) {
-          console.warn('[Student] Firebase 刪除失敗');
+          console.warn('[Student] Supabase 刪除失敗');
         }
       }
 
@@ -792,5 +792,5 @@
   // ========================================
   document.addEventListener('DOMContentLoaded', init);
 
-  console.log('[SPSS] Student v1.1 模組已載入（含 Firestore 降級方案）');
+  console.log('[SPSS] Student v1.1 模組已載入（含 Supabase 降級方案）');
 })();

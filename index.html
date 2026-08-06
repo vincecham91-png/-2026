@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="星图照片分享系统 - 学校专用的学生照片分享平台，银河星空主题，记录生活，分享感动。">
-  <meta name="keywords" content="照片分享,学校,学生作品,星空,银河,Firebase">
+  <meta name="keywords" content="照片分享,学校,学生作品,星空,银河,Supabase">
   <meta name="author" content="Star Photo Share Development Team">
   <meta name="theme-color" content="#050816">
   <meta property="og:title" content="星图照片分享系统">
@@ -113,7 +113,7 @@
         <div class="feature-item glass-card animate-slideInUp">
           <div class="feature-item__icon">☁️</div>
           <h3 class="feature-item__title">云端同步</h3>
-          <p class="feature-item__text">Firebase 云端储存，即时更新，资料安全</p>
+          <p class="feature-item__text">Supabase 云端储存，即时更新，资料安全</p>
         </div>
         <div class="feature-item glass-card animate-slideInUp">
           <div class="feature-item__icon">📊</div>
@@ -130,18 +130,15 @@
     <span class="footer__divider">·</span>
     <span>&copy; 2026 School</span>
     <span class="footer__divider">·</span>
-    <span>Powered by Cloudflare</span>
+    <span>Powered by Supabase</span>
   </footer>
 
-  <!-- JavaScript -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="firebase/firebaseConfig.js?v=3"></script>
+  <!-- Supabase 客户端 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="firebase/supabaseConfig.js?v=1"></script>
   <script src="js/util.js?v=3"></script>
-  <script src="js/firebase.js?v=6"></script>
-  <script src="js/api.js?v=5"></script>
+  <script src="js/supabase.js?v=1"></script>
+  <script src="js/api.js?v=6"></script>
   <script src="js/app.js?v=4"></script>
 </body>
 </html>

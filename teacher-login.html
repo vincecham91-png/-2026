@@ -30,7 +30,7 @@
     <div class="login-card glass-card teacher-login-card">
       <div class="login-card__logo">👩‍🏫</div>
       <h1 class="login-card__title">教师登入</h1>
-      <p class="login-card__subtitle">使用 Firebase 认证帐号登入</p>
+      <p class="login-card__subtitle">使用 Supabase 认证帐号登入</p>
 
       <!-- 错误提示 -->
       <div id="loginError" class="login-error" role="alert"></div>
@@ -78,13 +78,12 @@
     </div>
   </main>
 
-  <!-- JavaScript -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="firebase/firebaseConfig.js?v=3"></script>
+  <!-- Supabase 客户端 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="firebase/supabaseConfig.js?v=1"></script>
   <script src="js/util.js?v=3"></script>
-  <script src="js/firebase.js?v=5"></script>
-  <script src="js/api.js?v=5"></script>
+  <script src="js/supabase.js?v=1"></script>
+  <script src="js/api.js?v=6"></script>
   <script>
     /**
      * Star Photo Share System
@@ -132,22 +131,12 @@
             console.log('[TeacherLogin] 本地帐号验证成功');
           }
 
-          // 2. 尝试 Firebase Auth
+          // 2. 尝试 Supabase Auth
           if (!teacher && S.teacherLogin) {
             try {
               teacher = await S.teacherLogin(username, password);
             } catch(e) {
-              console.warn('[TeacherLogin] Firebase 登入失败:', e.message);
-            }
-          }
-
-          // 3. 降级：直接 Firebase Auth
-          if (!teacher && firebase.auth) {
-            try {
-              var userCredential = await firebase.auth().signInWithEmailAndPassword(username, password);
-              teacher = { uid: userCredential.user.uid, email: userCredential.user.email, role: 'teacher' };
-            } catch(e) {
-              console.warn('[TeacherLogin] Firebase Auth 失败:', e.message);
+              console.warn('[TeacherLogin] Supabase 登入失败:', e.message);
             }
           }
 

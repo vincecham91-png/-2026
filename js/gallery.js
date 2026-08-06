@@ -106,7 +106,7 @@
       if (S.getStudentsByClass && currentClass) {
         try {
           students = await S.getStudentsByClass(currentClass);
-        } catch (e) { console.warn('[Gallery] Firebase 学生加载失败'); }
+        } catch (e) { console.warn('[Gallery] Supabase 学生加载失败'); }
       }
 
       // 本地降级

@@ -5,7 +5,7 @@
  * 2026-08-04
  *
  * 功能：Dashboard 统计、学生列表、作品查看、搜索、CSV 下载、呈堂模式
- * v3: 重構初始化流程 — 本地 JSON + Firestore works 為數據源，過濾診斷文檔
+ * v3: 重構初始化流程 — 本地 JSON + Supabase works 為數據源，過濾診斷文檔
  */
 
 (function () {
@@ -49,7 +49,7 @@
     // 加載數據（逐步執行，確保每個步驟完成）
     try {
       await loadStudents();    // 1. 先載入學生列表（從本地 JSON + works）
-      await loadWorks();       // 2. 載入作品列表（從 Firestore）
+      await loadWorks();       // 2. 載入作品列表（從 Supabase）
       await mergeWorksToStudents(); // 3. 將作品完成狀態合併到學生列表
       await loadDashboardStats();   // 4. 計算並渲染儀表板統計
       await loadClassStats();       // 5. 計算班級統計
@@ -69,7 +69,7 @@
 
   /**
    * 強制將 localStorage 中的完成狀態合併到 allStudents
-   * 確保無論 Firebase 回傳什麼，localStorage 的狀態都會被套用
+   * 確保無論 Supabase 回傳什麼，localStorage 的狀態都會被套用
    */
   function forceMergeLocalStatus() {
     try {
@@ -110,7 +110,7 @@
     var cfg = S.TEACHER_CONFIG;
     var session = S.getSession && S.getSession('teacherSession');
 
-    // 检查 Firebase Auth
+    // 检查 Supabase Auth
     if (S.getCurrentTeacher) {
       try {
         currentTeacher = await S.getCurrentTeacher();
@@ -119,7 +119,7 @@
           return true;
         }
       } catch (e) {
-        console.warn('[Teacher] Firebase Auth 检查失败');
+        console.warn('[Teacher] Supabase Auth 检查失败');
       }
     }
 
@@ -276,7 +276,7 @@
   // ========================================
   async function loadStudents() {
     try {
-      // 從本地 JSON 加載（Firestore students 集合可能為空）
+      // 從本地 JSON 加載（Supabase students 集合可能為空）
       var response = await fetch('data/students.json');
       if (!response.ok) {
         console.warn('[Teacher] 無法載入 students.json');
@@ -308,7 +308,7 @@
   }
 
   /**
-   * 將 Firestore works 的完成狀態合併到 allStudents
+   * 將 Supabase works 的完成狀態合併到 allStudents
    * 雲端數據優先於 localStorage
    */
   function mergeWorksToStudents() {
@@ -403,10 +403,11 @@
 
   /**
    * 實時監聽作品變更 — 學生上傳後教師儀表板自動更新
+   * 使用 Supabase Realtime（替代旧版 Firestore onSnapshot）
    */
   function listenToWorks() {
-    if (!S.firestoreDB) {
-      console.warn('[Teacher] Firestore 未初始化，使用輪詢備援');
+    if (!S.isSupabaseAvailable) {
+      console.warn('[Teacher] Supabase 未初始化，使用輪詢備援');
       // 備援：每 30 秒輪詢
       setInterval(async function() {
         try {
@@ -424,71 +425,49 @@
     }
 
     try {
-      const db = S.firestoreDB;
-      db.collection('works').onSnapshot(function(snapshot) {
-        var hasChange = false;
-        snapshot.docChanges().forEach(function(change) {
-          var data = change.doc.data();
-          data.id = change.doc.id;
+      const unsubscribe = S.subscribeWorks(function(payload) {
+        var data = payload.new || payload.old;
+        if (!data) return;
 
-          // 過濾診斷文檔
-          var sid = data.studentId || data.id || '';
-          if (sid.startsWith('__')) return;
+        // 過濾診斷文檔
+        var sid = data.student_id || data.studentId || data.id || '';
+        if (sid.startsWith('__')) return;
 
-          if (change.type === 'added' || change.type === 'modified') {
-            // 更新或新增
-            var existingIdx = -1;
-            for (var i = 0; i < allWorks.length; i++) {
-              if (allWorks[i].id === data.id) { existingIdx = i; break; }
-            }
-            if (existingIdx >= 0) {
-              allWorks[existingIdx] = data;
-            } else {
-              allWorks.push(data);
-            }
-            hasChange = true;
-            console.log('[Teacher] 🔄 即時更新作品:', data.name || sid);
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          var workData = {
+            id: sid,
+            studentId: data.student_id || sid,
+            name: data.name,
+            class: data.class,
+            photoURL: data.photo_url || data.photoURL || '',
+            photoLink: data.photo_link || data.photoLink || '',
+            reason: data.reason,
+            completed: data.completed,
+            createdAt: data.created_at || data.createdAt,
+            updatedAt: data.updated_at || data.updatedAt
+          };
 
-            // 標記對應學生為已完成
-            var student = allStudents.find(function(s) { return s.studentId === sid; });
-            if (student) {
-              student.completed = true;
-              student.photoURL = student.photoURL || data.photoURL || '';
-              student.reason = student.reason || data.reason || '';
-            }
-          } else if (change.type === 'removed') {
-            allWorks = allWorks.filter(function(w) { return w.id !== data.id; });
-            hasChange = true;
+          var existingIdx = -1;
+          for (var i = 0; i < allWorks.length; i++) {
+            if (allWorks[i].id === sid) { existingIdx = i; break; }
           }
-        });
-
-        if (!hasChange) return;
-
-        // 重新整理排序
-        allWorks.sort(function(a, b) {
-          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
-        });
-
-        filteredStudents = allStudents.slice();
-        updateDashboardFromWorks();
-        renderStudentsTable(filteredStudents);
-      }, function(error) {
-        console.warn('[Teacher] 即時監聽失敗，使用輪詢備援:', error.message);
-        // 備援：每 30 秒輪詢
-        setInterval(async function() {
-          try {
-            var works = await S.getAllWorks();
-            allWorks = works.filter(function(w) {
-              var sid = w.studentId || w.id || '';
-              return !sid.startsWith('__');
-            });
-            mergeWorksToStudents();
-            updateDashboardFromWorks();
-            renderStudentsTable(filteredStudents);
-          } catch(e) {}
-        }, 30000);
+          if (existingIdx >= 0) {
+            allWorks[existingIdx] = workData;
+          } else {
+            allWorks.push(workData);
+          }
+          mergeWorksToStudents();
+          updateDashboardFromWorks();
+          renderStudentsTable(filteredStudents);
+          console.log('[Teacher] 🔄 即時更新作品:', workData.name || sid);
+        } else if (payload.eventType === 'DELETE') {
+          allWorks = allWorks.filter(function(w) { return w.id !== sid; });
+          mergeWorksToStudents();
+          updateDashboardFromWorks();
+          renderStudentsTable(filteredStudents);
+        }
       });
-      console.log('[Teacher] 🔄 即時監聽已啟動');
+      console.log('[Teacher] 🔄 Supabase 即時監聽已啟動');
     } catch(e) {
       console.warn('[Teacher] 無法啟動即時監聽:', e.message);
     }

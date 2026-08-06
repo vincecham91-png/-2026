@@ -43,12 +43,11 @@ module.exports = {
   IMPORT_MODE: 'sync',
 
   // ========================================
-  // Firebase 配置
+  // Supabase 配置
   // ========================================
-  FIREBASE: {
-    projectId: 'starphoto2026-397c3',
-    // 如果使用 service account，在此填入路径
-    serviceAccountPath: './firebase-service-account.json'
+  SUPABASE: {
+    url: 'https://YOUR_PROJECT_ID.supabase.co',
+    anonKey: 'YOUR_SUPABASE_ANON_KEY'
   },
 
   // ========================================

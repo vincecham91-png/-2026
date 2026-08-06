@@ -209,19 +209,19 @@
   // ========================================
   async function loadClasses() {
     try {
-      // 尝试从 Firebase 加载
+      // 尝试从 Supabase 加载
       let classStats = [];
       let allStudents = [];
 
       if (S.getAllClassStats && S.getStudentsByClass) {
         try {
           classStats = await S.getAllClassStats();
-        } catch (firebaseErr) {
-          console.warn('[App] Firebase 加载班级统计失败，尝试加载本地数据');
+        } catch (supabaseErr) {
+          console.warn('[App] Supabase 加载班级统计失败，尝试加载本地数据');
         }
       }
 
-      // 如果没有 Firebase 数据，尝试加载本地 JSON
+      // 如果没有 Supabase 数据，尝试加载本地 JSON
       if (classStats.length === 0) {
         try {
           const response = await fetch('data/students.json');

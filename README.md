@@ -93,11 +93,25 @@ node scripts/importFirestore.js
 
 ### 5. 部署
 
+#### 5.1 Firebase 部署
+
 ```bash
 firebase deploy
 ```
 
-或 Push 到 GitHub，GitHub Actions 自动部署。
+#### 5.2 Vercel 部署
+
+1. 登录 Vercel，连接 GitHub 仓库 `vincecham91-png/-2026`
+2. 选择项目根目录作为部署目录
+3. 构建命令留空
+4. 输出目录留空
+5. 直接部署静态站点
+
+> `vercel.json` 已配置静态路由回退，适合多页面/SPA 部署。
+
+#### 5.3 GitHub Actions
+
+Push 到 GitHub，GitHub Actions 自动部署。
 
 ---
 

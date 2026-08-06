@@ -5,10 +5,10 @@
 ## 技术栈
 
 - **前端**：HTML5 + CSS3 + Vanilla JavaScript（ES6 Modules）
-- **后端**：Firebase（Firestore + Storage + Authentication）
-- **部署**：Firebase Hosting + GitHub Pages
+- **后端**：Supabase（Database + Auth + Storage + Realtime）
+- **部署**：Vercel + GitHub Pages
 - **无 Build Tool**：所有代码直接可执行（无需 Vite/Webpack）
-- **允许的库**：Firebase SDK、Chart.js、SheetJS、Compressor.js
+- **允许的库**：Supabase JS Client、Chart.js、SheetJS、Compressor.js
 
 ## 架构约束
 
@@ -22,7 +22,7 @@
 ├── teacher.html        ← 教师仪表板
 ├── css/                ← 每个页面独立 CSS 文件
 ├── js/                 ← 每个页面独立 JS 模块
-├── firebase/           ← Firebase 配置与初始化
+├── firebase/           ← Supabase 配置与初始化
 ├── data/               ← 静态数据（students.json）
 ├── scripts/            ← 工具脚本（Excel 导入等）
 └── docs/               ← 项目文档
@@ -30,8 +30,8 @@
 
 ### 关键规则
 - **JS 必须模块化**：每个页面一个 JS 文件，不得全写在 HTML 中
-- **Firebase 统一初始化**：所有页面 import `firebase/firebaseConfig.js`，禁止重复初始化
-- **权限分离**：学生只能访问自己的数据；教师通过 Firebase Authentication + Role Check
+- **Supabase 统一初始化**：所有页面 import `firebase/supabaseConfig.js`，禁止重复初始化
+- **权限分离**：学生只能访问自己的数据；教师通过 Supabase Auth + Role Check
 - **Session 检查**：禁止直接 URL 进入 `student.html`，必须先登录
 
 ## UI 设计系统
@@ -51,22 +51,40 @@
 - 不得重新生成已完成的旧文件
 
 ### 数据库
-- Firestore Collections：`students`、`works`、`classes`、`teachers`、`settings`、`logs`、`announcements`、`statistics`
-- Storage Path：`images/`
-- Schema 规范统一，全部使用常量定义 Collection 名称
+- Supabase Tables：`students`、`works`、`classes`、`teachers`、`settings`、`logs`、`announcements`
+- Storage Bucket：`images`
+- Schema 规范统一，全部使用常量定义表名称
 
 ### 图片处理
 - 支持格式：JPG、PNG、WEBP、JPEG
 - 压缩：最长边 1600px，品质 85%
-- Storage：统一使用 Firebase Storage
+- Storage：统一使用 Supabase Storage（优先）→ Worker R2（备用）→ base64（降级）
 
 ## 禁止事项
 
 - ❌ TODO / FIXME / Placeholder / Coming Soon / 省略 / 略
 - ❌ `alert()` / `confirm()` / `prompt()` —— 统一使用 Toast Component
-- ❌ Magic String —— Firestore Collection/Path 统一用常量
+- ❌ Magic String —— Supabase Table/Path 统一用常量
 - ❌ 不同页面不同 Design Token —— 统一 Design System
 - ❌ 只做 Desktop —— 必须 Responsive 三端
+
+## 迁移注意事项（Firebase → Supabase）
+
+1. 所有 Firebase CDN 已替换为 Supabase CDN
+2. `firebase/firebaseConfig.js` → `firebase/supabaseConfig.js`
+3. `js/firebase.js` → `js/supabase.js`
+4. 学生密码仍存储在 Supabase `students` 表中（前端比对）
+5. 教师认证使用 Supabase Auth（email/password）
+6. 实时监听使用 `subscribeWorks()` 替代 Firestore `onSnapshot()`
+7. 保持 localStorage 降级方案（Supabase 不可用时自动切换）
+
+## 部署准备
+
+1. 在 Supabase Dashboard 创建项目
+2. 执行 `docs/supabase-setup.sql` 创建表格和权限
+3. 在 `firebase/supabaseConfig.js` 中填入 URL 和 anon key
+4. 使用 `scripts/importSupabase.js` 导入学生数据
+5. 部署到 Vercel（已配置 `vercel.json`）
 
 ## 文档索引
 
@@ -88,11 +106,13 @@ Agent 应按需使用 Read 工具读取以下文档，不要一次性加载所�
 | 数据库 Schema | `docs/12-Database-Schema.md` |
 | 测试检查清单 | `docs/13-Testing-QA.md` |
 | 部署流程 | `docs/14-Deployment-Manual.md` |
+| **Supabase 迁移指南** | `docs/Supabase-Migration-Guide.md` |
+| **数据库建表 SQL** | `docs/supabase-setup.sql` |
 
 ## 安全规则
 
-- Firestore Rules 必须启用
-- Storage Rules 必须启用
-- 教师：Role Check（Firebase Auth Custom Claims）
+- Database RLS（Row Level Security）必须启用
+- Storage Policies 必须启用
+- 教师：Role Check（Supabase Auth + JWT Claims）
 - 学生：只能读取和修改自己的数据
-- 所有错误：Console + Firebase Log 双记录
+- 所有错误：Console + Log 表双记录

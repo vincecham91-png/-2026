@@ -70,7 +70,7 @@ function convertExcel() {
     console.log(`  ${cls}: ${count} 人`);
   });
 
-  console.log('\n✅ 转换完成！可执行 node scripts/importFirestore.js 导入 Firestore');
+  console.log('\n✅ 转换完成！可执行 node scripts/importSupabase.js 导入 Supabase');
   return validStudents;
 }
 

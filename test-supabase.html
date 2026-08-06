@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supabase 连接测试</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background: #0a0e1a; color: #e0e6f0; min-height: 100vh; padding: 24px; }
+    .container { max-width: 640px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 8px; font-size: 24px; color: #a5b4fc; }
+    .subtitle { text-align: center; color: #6b7280; margin-bottom: 32px; font-size: 14px; }
+    .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+    .card h2 { font-size: 16px; color: #818cf8; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    label { display: block; font-size: 13px; color: #9ca3af; margin-bottom: 6px; }
+    input { width: 100%; padding: 12px 14px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; color: #e0e6f0; font-size: 14px; outline: none; transition: border-color 0.2s; }
+    input:focus { border-color: #818cf8; }
+    input::placeholder { color: #4b5563; }
+    button { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-top: 12px; }
+    .btn-test { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; }
+    .btn-test:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-test:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-clear { background: rgba(255,255,255,0.08); color: #9ca3af; margin-top: 8px; }
+    .btn-clear:hover { background: rgba(255,255,255,0.12); }
+    .result { margin-top: 12px; padding: 12px 16px; border-radius: 10px; font-size: 13px; line-height: 1.8; }
+    .result--pass { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: #4ade80; }
+    .result--fail { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; }
+    .result--info { background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3); color: #a5b4fc; }
+    .result--warn { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #fbbf24; }
+    .result pre { white-space: pre-wrap; word-break: break-all; margin-top: 8px; font-size: 12px; color: #9ca3af; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 8px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+    .summary-item { text-align: center; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
+    .summary-item .num { font-size: 32px; font-weight: 700; }
+    .summary-item .label { font-size: 12px; color: #6b7280; margin-top: 4px; }
+    .summary-item.green .num { color: #4ade80; }
+    .summary-item.red .num { color: #f87171; }
+    .summary-item.yellow .num { color: #fbbf24; }
+    .nav-link { text-align: center; margin-top: 24px; font-size: 13px; }
+    .nav-link a { color: #818cf8; text-decoration: none; }
+    .nav-link a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Supabase 连接测试</h1>
+    <p class="subtitle">星图照片分享系统 — 数据库连接验证</p>
+
+    <!-- 配置区 -->
+    <div class="card">
+      <h2>📋 配置 Supabase</h2>
+      <div style="margin-bottom:12px">
+        <label>Project URL</label>
+        <input type="text" id="inputUrl" placeholder="https://xxxxx.supabase.co" value="https://wqxpnpcgydyblktktigv.supabase.co" autocomplete="url">
+      </div>
+      <div style="margin-bottom:12px">
+        <label>Anon / Public Key</label>
+        <input type="password" id="inputKey" placeholder="eyJhbGciOi..." value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxeHBucGNneWR5YmxrdGt0aWd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MDUwNzAsImV4cCI6MjEwMTQ4MTA3MH0.X-QktVBOHoJ-47vq-Z0fz-XsrL-SkVMUbxY9pmB8TZM" autocomplete="off">
+      </div>
+      <button class="btn-test" id="btnTest" onclick="runTests()">🔍 开始测试</button>
+      <button class="btn-clear" onclick="clearResults()">🗑 清除结果</button>
+    </div>
+
+    <!-- 汇总 -->
+    <div class="summary" id="summary" style="display:none">
+      <div class="summary-item green"><div class="num" id="sumPass">0</div><div class="label">通过</div></div>
+      <div class="summary-item red"><div class="num" id="sumFail">0</div><div class="label">失败</div></div>
+      <div class="summary-item yellow"><div class="num" id="sumWarn">0</div><div class="label">警告</div></div>
+    </div>
+
+    <!-- 结果区 -->
+    <div id="results"></div>
+
+    <div class="nav-link">
+      <a href="index.html">← 返回首页</a> &nbsp;|&nbsp;
+      <a href="teacher-login.html">教师登入</a> &nbsp;|&nbsp;
+      <a href="login.html">学生登入</a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    let tests = [];
+
+    function addResult(name, passed, detail = '') {
+      tests.push({ name, passed });
+      const r = document.getElementById('results');
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = `
+        <h2>${passed ? '✅' : '❌'} ${name}</h2>
+        <div class="result ${passed ? 'result--pass' : 'result--fail'}">
+          ${passed ? '通过' : '失败'}
+          ${detail ? '<pre>' + escapeHtml(detail) + '</pre>' : ''}
+        </div>
+      `;
+      r.appendChild(el);
+      updateSummary();
+    }
+
+    function addWarn(name, detail = '') {
+      tests.push({ name, passed: null });
+      const r = document.getElementById('results');
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = `
+        <h2>⚠️ ${name}</h2>
+        <div class="result result--warn">${detail}</div>
+      `;
+      r.appendChild(el);
+      updateSummary();
+    }
+
+    function addInfo(name, detail = '') {
+      tests.push({ name, passed: true });
+      const r = document.getElementById('results');
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = `
+        <h2>ℹ️ ${name}</h2>
+        <div class="result result--info">${detail}</div>
+      `;
+      r.appendChild(el);
+      updateSummary();
+    }
+
+    function updateSummary() {
+      const pass = tests.filter(t => t.passed === true).length;
+      const fail = tests.filter(t => t.passed === false).length;
+      const warn = tests.filter(t => t.passed === null).length;
+      document.getElementById('sumPass').textContent = pass;
+      document.getElementById('sumFail').textContent = fail;
+      document.getElementById('sumWarn').textContent = warn;
+      document.getElementById('summary').style.display = 'grid';
+    }
+
+    function clearResults() {
+      tests = [];
+      document.getElementById('results').innerHTML = '';
+      document.getElementById('summary').style.display = 'none';
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    async function runTests() {
+      clearResults();
+      const url = document.getElementById('inputUrl').value.trim();
+      const key = document.getElementById('inputKey').value.trim();
+      const btn = document.getElementById('btnTest');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>测试中...';
+
+      if (!url || !key) {
+        addResult('配置检查', false, '请填写 Project URL 和 Anon Key');
+        btn.disabled = false;
+        btn.textContent = '🔍 开始测试';
+        return;
+      }
+
+      // 测试 1: SDK 加载
+      addInfo('SDK 加载', 'Supabase JS Client v2 已加载');
+
+      // 测试 2: 连接
+      let client;
+      try {
+        client = supabase.createClient(url, key);
+        addResult('SDK 初始化', true, `Project: ${url}`);
+      } catch (e) {
+        addResult('SDK 初始化', false, e.message);
+        btn.disabled = false;
+        btn.textContent = '🔍 开始测试';
+        return;
+      }
+
+      // 测试 3: 基本连接（health check）
+      try {
+        const { data, error } = await client.from('students').select('id').limit(1);
+        if (error && error.message.includes('relation') || error.message.includes('does not exist')) {
+          addResult('数据库连接', true, '✅ 连接成功！但表格尚未创建。<br>请先执行 docs/supabase-setup.sql');
+        } else if (error) {
+          addResult('数据库连接', false, error.message);
+        } else {
+          addResult('数据库连接', true, '✅ 数据库连接正常');
+        }
+      } catch (e) {
+        addResult('数据库连接', false, e.message);
+      }
+
+      // 测试 4: 检查表格是否存在
+      try {
+        const checks = ['students', 'works', 'classes', 'teachers', 'logs'];
+        const results = await Promise.allSettled(checks.map(async (table) => {
+          const { error } = await client.from(table).select('id').limit(1);
+          return { table, error: error?.message || null };
+        }));
+        const passTables = results.filter(r => r.status === 'fulfilled' && !r.value.error);
+        const failTables = results.filter(r => r.status === 'fulfilled' && r.value.error);
+
+        if (failTables.length === 0) {
+          addResult('表格检查', true, `✅ 所有表格存在: ${checks.join(', ')}`);
+        } else if (passTables.length > 0) {
+          addResult('表格检查', false, `✅ 已找到: ${passTables.map(r => r.value.table).join(', ')}<br>❌ 缺失: ${failTables.map(r => r.value.table).join(', ')}`);
+        } else {
+          addResult('表格检查', false, '❌ 表格不存在，请先执行 supabase-setup.sql<br>' +
+            failTables.map(r => `  · ${r.value.table}: ${r.value.error}`).join('<br>'));
+        }
+      } catch (e) {
+        addResult('表格检查', false, e.message);
+      }
+
+      // 测试 5: Storage 检查
+      try {
+        const { data: buckets, error: bucketErr } = await client.storage.listBuckets();
+        if (bucketErr) {
+          addResult('Storage 检查', false, bucketErr.message);
+        } else if (buckets.some(b => b.name === 'images')) {
+          addResult('Storage 检查', true, '✅ images Bucket 已存在');
+        } else {
+          addResult('Storage 检查', false, '⚠️ 未找到 images Bucket，请手动在 Dashboard 创建');
+        }
+      } catch (e) {
+        addResult('Storage 检查', false, e.message);
+      }
+
+      // 测试 6: 写入测试
+      try {
+        const testId = 'test_' + Date.now();
+        const { error: writeErr } = await client.from('students').insert({
+          student_id: testId,
+          name: '测试用户',
+          class: '测试班',
+          password: 'test'
+        });
+        if (writeErr) {
+          addResult('写入测试', false, writeErr.message + '<br>（可能是 RLS 策略限制，请检查安全规则）');
+        } else {
+          // 清理测试数据
+          await client.from('students').delete().eq('student_id', testId);
+          addResult('写入测试', true, '✅ 数据写入和清理成功');
+        }
+      } catch (e) {
+        addResult('写入测试', false, e.message);
+      }
+
+      // 测试 7: 读取测试
+      try {
+        const { data, error } = await client.from('students').select('student_id, name, class').limit(5);
+        if (error) {
+          addResult('读取测试', false, error.message);
+        } else if (data && data.length > 0) {
+          addResult('读取测试', true, `✅ 读取到 ${data.length} 条记录<br>` +
+            data.map(r => `  · ${r.student_id} - ${r.name} (${r.class})`).join('<br>'));
+        } else {
+          addResult('读取测试', true, '✅ 读取正常，当前无学生数据');
+        }
+      } catch (e) {
+        addResult('读取测试', false, e.message);
+      }
+
+      btn.disabled = false;
+      btn.textContent = '🔍 重新测试';
+    }
+
+    // 页面加载时检查 URL 参数
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('url') && params.get('key')) {
+        document.getElementById('inputUrl').value = params.get('url');
+        document.getElementById('inputKey').value = params.get('key');
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -289,7 +289,7 @@ function hideLoading(loadingEl) {
 
 /**
  * 格式化时间戳为可读字符串
- * @param {Date|FirebaseTimestamp|string} timestamp - 时间戳
+ * @param {Date|timestamp|string} timestamp - 时间戳
  * @param {string} format - 格式: 'full' | 'date' | 'time' | 'datetime'
  * @returns {string} 格式化后的字符串
  */
@@ -297,7 +297,7 @@ function formatTime(timestamp, format = 'datetime') {
   if (!timestamp) return '-';
 
   let date;
-  // 处理 Firebase Timestamp
+  // 处理时间戳
   if (timestamp && typeof timestamp.toDate === 'function') {
     date = timestamp.toDate();
   } else if (timestamp instanceof Date) {
@@ -330,7 +330,7 @@ function formatTime(timestamp, format = 'datetime') {
 
 /**
  * 获取相对时间（如"3分钟前"）
- * @param {Date|FirebaseTimestamp} timestamp - 时间戳
+ * @param {Date|timestamp} timestamp - 时间戳
  * @returns {string} 相对时间字符串
  */
 function timeAgo(timestamp) {

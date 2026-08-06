@@ -59,7 +59,7 @@
       console.warn('[Login] 本地加载失败');
     }
 
-    // 尝试 Firebase
+    // 尝试 Supabase
     if (S.getAllClasses) {
       try {
         const classes = await S.getAllClasses();
