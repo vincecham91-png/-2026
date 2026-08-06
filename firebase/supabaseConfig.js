@@ -7,16 +7,22 @@
  * 功能：初始化 Supabase 客户端（Database + Auth + Storage + Realtime）
  * 所有页面统一引用此文件，禁止重复初始化
  *
- * 请前往 Supabase Dashboard 获取以下配置：
- * - Project URL: https://<your-project>.supabase.co
- * - anon/public key: 在 Settings > API 中复制
+ * 注意：Supabase URL 和 Key 请从 config.local.js 加载
  */
 
 // ========================================
-// Supabase 配置 — 请替换为实际值
+// 检查是否加载了本地配置
 // ========================================
-const SUPABASE_URL = 'https://wqxpnpcgydyblktktigv.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxeHBucGNneWR5YmxrdGt0aWd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MDUwNzAsImV4cCI6MjEwMTQ4MTA3MH0.X-QktVBOHoJ-47vq-Z0fz-XsrL-SkVMUbxY9pmB8TZM';
+if (!window.SPSS_SUPABASE_URL || !window.SPSS_SUPABASE_ANON_KEY) {
+  console.warn('[Config] 警告: 未检测到本地配置文件 config.local.js');
+  console.warn('[Config] 请确保在 html 中先加载 config.local.js');
+}
+
+// ========================================
+// 使用本地配置
+// ========================================
+const SUPABASE_URL = window.SPSS_SUPABASE_URL || 'https://YOUR_PROJECT_ID.supabase.co';
+const SUPABASE_ANON_KEY = window.SPSS_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
 
 // ========================================
 // 判断是否配置了真实 Supabase
@@ -57,9 +63,9 @@ const TABLES = {
 };
 
 // ========================================
-// 教师本地帐号配置（开发模式）
+// 教师本地帐号配置（从本地配置加载）
 // ========================================
-const TEACHER_CONFIG = {
+const TEACHER_CONFIG = window.SPSS_TEACHER_CONFIG || {
   username: 'Cham Chin Hong',
   email: 'teacher@school.edu.my',
   password: '12345',

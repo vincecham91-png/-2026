@@ -14,6 +14,9 @@ firebase-debug.*.log
 .env.local
 .env.production
 
+# Local config (contains sensitive data - DO NOT COMMIT)
+config.local.js
+
 # Local config (contains sensitive data)
 teacher-config.local.js
 teacher-login.html
