@@ -1,10 +1,11 @@
 {
+  "version": 2,
   "routes": [
-    { "src": "/data/(.*)", "dest": "/data/$1" },
-    { "src": "/css/(.*)", "dest": "/css/$1" },
-    { "src": "/js/(.*)", "dest": "/js/$1" },
-    { "src": "/firebase/(.*)", "dest": "/firebase/$1" },
-    { "src": "/assets/(.*)", "dest": "/assets/$1" },
-    { "src": "/(.*)", "dest": "/$1" }
+    { "src": "/data/students\\.json", "dest": "/data/students.json" },
+    { "src": "/css/.*\\.css", "dest": "$0" },
+    { "src": "/js/.*\\.js", "dest": "$0" },
+    { "src": "/firebase/.*\\.js", "dest": "$0" },
+    { "src": "/assets/.*", "dest": "$0" },
+    { "src": "/.*", "dest": "/index.html" }
   ]
 }
