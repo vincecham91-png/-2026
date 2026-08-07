@@ -1,7 +1,7 @@
 /**
  * Star Photo Share System
  * Supabase 配置与初始化
- * Version 1.1
+ * Version 1.2
  * 2026-08-05
  *
  * 功能：初始化 Supabase 客户端（Database + Auth + Storage + Realtime）
@@ -11,18 +11,19 @@
 // ========================================
 // 检查配置
 // ========================================
-const SUPABASE_URL = window.SPSS_SUPABASE_URL || 'https://YOUR_PROJECT_ID.supabase.co';
-const SUPABASE_ANON_KEY = window.SPSS_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
+var SUPABASE_URL = window.SPSS_SUPABASE_URL || 'https://YOUR_PROJECT_ID.supabase.co';
+var SUPABASE_ANON_KEY = window.SPSS_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
 
-const IS_CONFIGURED =
+var IS_CONFIGURED =
   SUPABASE_URL !== 'https://YOUR_PROJECT_ID.supabase.co' &&
   SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
 
 // ========================================
 // 初始化 Supabase 客户端
 // ========================================
-let supabaseClient = null;
-let supabase = null;
+var supabaseClient = null;
+// 使用不同的变量名避免与全局 supabase 冲突
+var spssSupabase = null;
 
 // 检查 SDK 是否加载
 if (!window.supabase) {
@@ -31,8 +32,8 @@ if (!window.supabase) {
   console.warn('[Supabase] ⚠️ 未配置 Supabase URL 或 Key');
 } else {
   try {
-    supabase = window.supabase;
-    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    spssSupabase = window.supabase;
+    supabaseClient = spssSupabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     console.log('[Supabase] ✅ 客户端初始化成功:', SUPABASE_URL);
   } catch (error) {
     console.error('[Supabase] ❌ 初始化失败:', error.message);
@@ -42,7 +43,7 @@ if (!window.supabase) {
 // ========================================
 // 表名常量
 // ========================================
-const TABLES = {
+var TABLES = {
   STUDENTS: 'students',
   WORKS: 'works',
   CLASSES: 'classes',
@@ -55,7 +56,7 @@ const TABLES = {
 // ========================================
 // 教师配置
 // ========================================
-const TEACHER_CONFIG = window.SPSS_TEACHER_CONFIG || {
+var TEACHER_CONFIG = window.SPSS_TEACHER_CONFIG || {
   username: 'Cham Chin Hong',
   email: 'teacher@school.edu.my',
   password: '12345',
@@ -67,7 +68,7 @@ const TEACHER_CONFIG = window.SPSS_TEACHER_CONFIG || {
 // 导出到全局
 // ========================================
 window.SPSS = window.SPSS || {};
-window.SPSS.supabase = supabase;
+window.SPSS.supabase = spssSupabase;
 window.SPSS.supabaseClient = supabaseClient;
 window.SPSS.TABLES = TABLES;
 window.SPSS.TEACHER_CONFIG = TEACHER_CONFIG;
@@ -77,4 +78,4 @@ window.SPSS.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
 // 调试日志
 console.log('[Supabase Config] SUPABASE_URL:', SUPABASE_URL);
 console.log('[Supabase Config] supabaseClient:', supabaseClient ? '✅ 已创建' : '❌ 未创建');
-console.log('[Supabase Config] window.supabase:', window.supabase ? '✅ 已加载' : '❌ 未加载');
+console.log('[Supabase Config] spssSupabase:', spssSupabase ? '✅ 已加载' : '❌ 未加载');
