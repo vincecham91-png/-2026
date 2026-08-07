@@ -1,32 +1,10 @@
 {
-  "version": 2,
   "routes": [
-    {
-      "src": "/data/.+",
-      "dest": "/$1"
-    },
-    {
-      "src": "/css/.+",
-      "dest": "/$1"
-    },
-    {
-      "src": "/js/.+",
-      "dest": "/$1"
-    },
-    {
-      "src": "/firebase/.+",
-      "dest": "/$1"
-    },
-    {
-      "src": "/assets/.+",
-      "dest": "/$1"
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/.*",
-      "dest": "/index.html"
-    }
+    { "src": "/data/(.*)", "dest": "/data/$1" },
+    { "src": "/css/(.*)", "dest": "/css/$1" },
+    { "src": "/js/(.*)", "dest": "/js/$1" },
+    { "src": "/firebase/(.*)", "dest": "/firebase/$1" },
+    { "src": "/assets/(.*)", "dest": "/assets/$1" },
+    { "src": "/(.*)", "dest": "/$1" }
   ]
 }
