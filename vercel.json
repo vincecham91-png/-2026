@@ -2,6 +2,26 @@
   "version": 2,
   "routes": [
     {
+      "src": "/data/.+",
+      "dest": "/$1"
+    },
+    {
+      "src": "/css/.+",
+      "dest": "/$1"
+    },
+    {
+      "src": "/js/.+",
+      "dest": "/$1"
+    },
+    {
+      "src": "/firebase/.+",
+      "dest": "/$1"
+    },
+    {
+      "src": "/assets/.+",
+      "dest": "/$1"
+    },
+    {
       "handle": "filesystem"
     },
     {
