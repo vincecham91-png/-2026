@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>教师登录调试</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, sans-serif; background: #0a0e1a; color: #e0e6f0; padding: 24px; }
+    .container { max-width: 640px; margin: 0 auto; }
+    h1 { text-align: center; color: #a5b4fc; margin-bottom: 8px; }
+    .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+    input { width: 100%; padding: 12px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; color: #e0e6f0; font-size: 14px; margin-bottom: 12px; }
+    button { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; }
+    button:hover { opacity: 0.9; }
+    .log { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 16px; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto; margin-top: 16px; }
+    .log p { margin-bottom: 4px; }
+    .ok { color: #4ade80; }
+    .err { color: #f87171; }
+    .info { color: #a5b4fc; }
+    .warn { color: #fbbf24; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 教师登录调试</h1>
+    <div class="card">
+      <input type="email" id="email" placeholder="邮箱" value="teacher@school.edu.my">
+      <input type="password" id="password" placeholder="密码" value="12345">
+      <button onclick="testLogin()">🔐 测试登录</button>
+      <button onclick="location.href="https://2026-2hzg.vercel.app/teacher-login.html"" style="background:rgba(255,255,255,0.1);margin-top:8px">返回登录页</button>
+    </div>
+    <div class="log" id="log"></div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://wqxpnpcgydyblktktigv.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxeHBucGNneWR5YmxrdGt0aWd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MDUwNzAsImV4cCI6MjEwMTQ4MTA3MH0.X-QktVBOHoJ-47vq-Z0fz-XsrL-SkVMUbxY9pmB8TZM";
+    
+    function log(msg, type = "info") {
+      const el = document.getElementById("log");
+      const p = document.createElement("p");
+      p.className = type;
+      p.textContent = "[" + new Date().toLocaleTimeString() + "] " + msg;
+      el.appendChild(p);
+      el.scrollTop = el.scrollHeight;
+    }
+    
+    async function testLogin() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      document.getElementById("log").innerHTML = "";
+      
+      log("开始登录测试...", "info");
+      log("Supabase URL: " + SUPABASE_URL, "info");
+      log("Email: " + email, "info");
+      
+      try {
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        log("✅ Supabase 客户端创建成功", "ok");
+        
+        log("调用 signInWithPassword...", "info");
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        
+        if (error) {
+          log("❌ 登录失败: " + error.message, "err");
+          return;
+        }
+        
+        log("✅ 登录成功", "ok");
+        log("User ID: " + data.user.id, "ok");
+        log("Email: " + data.user.email, "ok");
+        
+        log("查询教师表...", "info");
+        const { data: teacherData, error: teacherError } = await sb
+          .from("teachers")
+          .select("*")
+          .eq("id", data.user.id)
+          .single();
+        
+        if (teacherError) {
+          log("❌ 查询教师表失败: " + teacherError.message, "err");
+          await sb.auth.signOut();
+          return;
+        }
+        
+        log("✅ 教师信息: " + teacherData.name + " (" + teacherData.role + ")", "ok");
+        
+        log("更新登录时间...", "info");
+        await sb.from("teachers").update({ last_login: new Date().toISOString() }).eq("id", data.user.id);
+        log("✅ 登录时间已更新", "ok");
+        
+        log("", "info");
+        log("════════════════════════════════════════", "info");
+        log("✅ 登录流程完全正常！", "ok");
+        log("════════════════════════════════════════", "info");
+        log("", "info");
+        log("请在浏览器中测试登录页:", "info");
+        log("https://2026-2hzg.vercel.app/teacher-login.html", "info");
+        log("", "info");
+        log("如果仍失败，请按 Ctrl+Shift+R 强制刷新页面", "warn");
+        
+      } catch (e) {
+        log("❌ 异常: " + e.message, "err");
+        log(e.stack, "err");
+      }
+    }
+  </script>
+</body>
+</html>
