@@ -119,47 +119,62 @@
         btn.disabled = true;
         btn.textContent = '登入中...';
 
+        console.log('[TeacherLogin] 开始登录:', username);
+        console.log('[TeacherLogin] SPSS 对象:', window.SPSS ? '存在' : '不存在');
+        console.log('[TeacherLogin] teacherLogin 函数:', typeof window.SPSS?.teacherLogin);
+
         try {
           var teacher = null;
-          var cfg = S.TEACHER_CONFIG;
-          var error = null;
+          var cfg = window.SPSS_TEACHER_CONFIG || window.SPSS?.TEACHER_CONFIG;
+          var supabaseClient = window.SPSS?.supabaseClient || window.supabaseClient;
 
-          // 优先尝试 Supabase Auth（真实登录）
-          if (S.teacherLogin) {
+          console.log('[TeacherLogin] cfg:', cfg);
+          console.log('[TeacherLogin] supabaseClient:', supabaseClient ? '存在' : '不存在');
+
+          // 1. 尝试 Supabase Auth
+          if (window.SPSS?.teacherLogin) {
+            console.log('[TeacherLogin] 使用 SPSS.teacherLogin...');
             try {
-              teacher = await S.teacherLogin(username, password);
-              console.log('[TeacherLogin] Supabase 登入成功:', teacher.email);
+              teacher = await window.SPSS.teacherLogin(username, password);
+              console.log('[TeacherLogin] Supabase 登入成功:', teacher);
             } catch(e) {
-              error = e;
-              console.warn('[TeacherLogin] Supabase 登入失败:', e.message);
+              console.error('[TeacherLogin] Supabase 登入失败:', e);
             }
           }
 
-          // 备用：本地验证（仅用于测试）
+          // 2. 备用：使用本地配置
           if (!teacher && cfg && cfg.password === password &&
               (username === cfg.username || username === cfg.email)) {
-            // 尝试从 Supabase 获取真实用户信息
-            if (S.teacherLogin) {
-              try {
-                teacher = await S.teacherLogin(username, password);
-                console.log('[TeacherLogin] 备用通道登入成功:', teacher.email);
-              } catch(e2) {
-                // 如果 Supabase 登录失败，使用本地配置作为备用
+            console.log('[TeacherLogin] 使用本地配置登入...');
+            teacher = {
+              uid: 'local-teacher-001',
+              email: cfg.email,
+              name: cfg.displayName,
+              role: cfg.role
+            };
+          }
+
+          // 3. 直接调用 Supabase Auth（备用）
+          if (!teacher && supabaseClient) {
+            console.log('[TeacherLogin] 直接调用 Supabase Auth...');
+            try {
+              const { data, error } = await supabaseClient.auth.signInWithPassword({
+                email: username,
+                password: password
+              });
+              if (data?.user) {
+                console.log('[TeacherLogin] 直接登入成功:', data.user.email);
                 teacher = {
-                  uid: 'local-teacher-001',
-                  email: cfg.email,
-                  name: cfg.displayName,
-                  role: cfg.role
+                  uid: data.user.id,
+                  email: data.user.email,
+                  name: '教师',
+                  role: 'teacher'
                 };
-                console.log('[TeacherLogin] 使用本地备用帐号');
+              } else if (error) {
+                console.error('[TeacherLogin] 直接登入错误:', error.message);
               }
-            } else {
-              teacher = {
-                uid: 'local-teacher-001',
-                email: cfg.email,
-                name: cfg.displayName,
-                role: cfg.role
-              };
+            } catch(e) {
+              console.error('[TeacherLogin] 直接登入异常:', e);
             }
           }
 
