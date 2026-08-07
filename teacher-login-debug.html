@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>教师登录 - 调试版</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, sans-serif; background: #0a0e1a; color: #e0e6f0; padding: 24px; }
+    .container { max-width: 640px; margin: 0 auto; }
+    h1 { text-align: center; color: #a5b4fc; margin-bottom: 24px; }
+    .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 13px; color: #9ca3af; margin-bottom: 6px; }
+    input { width: 100%; padding: 12px 14px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; color: #e0e6f0; font-size: 14px; outline: none; }
+    input:focus { border-color: #818cf8; }
+    button { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; margin-top: 8px; }
+    button:hover { opacity: 0.9; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 12px; color: #f87171; margin-top: 16px; display: none; }
+    .error.show { display: block; }
+    .success { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); border-radius: 10px; padding: 12px; color: #4ade80; margin-top: 16px; display: none; }
+    .success.show { display: block; }
+    .log { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 16px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto; margin-top: 16px; }
+    .log p { margin-bottom: 4px; }
+    .ok { color: #4ade80; }
+    .err { color: #f87171; }
+    .info { color: #a5b4fc; }
+    .warn { color: #fbbf24; }
+    .nav { text-align: center; margin-top: 24px; font-size: 13px; }
+    .nav a { color: #818cf8; text-decoration: none; margin: 0 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 教师登录（调试版）</h1>
+    
+    <div class="card">
+      <div class="form-group">
+        <label>邮箱</label>
+        <input type="email" id="email" value="teacher@school.edu.my" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" id="password" value="12345" autocomplete="current-password">
+      </div>
+      <button id="loginBtn" onclick="login()">教师登入 🔐</button>
+      <div id="error" class="error"></div>
+      <div id="success" class="success"></div>
+    </div>
+    
+    <div class="card">
+      <h2 style="color:#818cf8;margin-bottom:12px">📋 调试日志</h2>
+      <div class="log" id="log"></div>
+    </div>
+    
+    <div class="nav">
+      <a href="/teacher-login.html">返回登录页</a>
+      <a href="/">返回首页</a>
+    </div>
+  </div>
+  
+  <script>
+    const SUPABASE_URL = "https://wqxpnpcgydyblktktigv.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxeHBucGNneWR5YmxrdGt0aWd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MDUwNzAsImV4cCI6MjEwMTQ4MTA3MH0.X-QktVBOHoJ-47vq-Z0fz-XsrL-SkVMUbxY9pmB8TZM";
+    
+    function log(msg, type = "info") {
+      const el = document.getElementById("log");
+      const p = document.createElement("p");
+      p.className = type;
+      p.textContent = "[" + new Date().toLocaleTimeString() + "] " + msg;
+      el.appendChild(p);
+      el.scrollTop = el.scrollHeight;
+    }
+    
+    function showError(msg) {
+      const el = document.getElementById("error");
+      el.textContent = msg;
+      el.classList.add("show");
+      document.getElementById("success").classList.remove("show");
+    }
+    
+    function showSuccess(msg) {
+      const el = document.getElementById("success");
+      el.textContent = msg;
+      el.classList.add("show");
+      document.getElementById("error").classList.remove("show");
+    }
+    
+    async function login() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const btn = document.getElementById("loginBtn");
+      
+      document.getElementById("error").classList.remove("show");
+      document.getElementById("success").classList.remove("show");
+      document.getElementById("log").innerHTML = "";
+      
+      btn.disabled = true;
+      btn.textContent = "登入中...";
+      
+      log("开始登录测试...", "info");
+      log("Email: " + email, "info");
+      log("Supabase URL: " + SUPABASE_URL, "info");
+      
+      try {
+        // 1. 加载 Supabase SDK
+        log("1. 加载 Supabase SDK...", "info");
+        if (typeof supabase === "undefined") {
+          throw new Error("Supabase SDK 未加载");
+        }
+        log("   ✅ SDK 已加载", "ok");
+        
+        // 2. 创建客户端
+        log("2. 创建 Supabase 客户端...", "info");
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        log("   ✅ 客户端创建成功", "ok");
+        
+        // 3. 登录
+        log("3. 调用 signInWithPassword...", "info");
+        const { data, error } = await sb.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+        
+        if (error) {
+          throw new Error("登录失败: " + error.message);
+        }
+        
+        log("   ✅ 登录成功", "ok");
+        log("   User ID: " + data.user.id, "ok");
+        log("   Email: " + data.user.email, "ok");
+        
+        // 4. 查询教师表
+        log("4. 查询教师表...", "info");
+        const { data: teacherData, error: teacherError } = await sb
+          .from("teachers")
+          .select("*")
+          .eq("id", data.user.id)
+          .single();
+        
+        if (teacherError) {
+          throw new Error("查询教师表失败: " + teacherError.message);
+        }
+        
+        log("   ✅ 教师信息: " + teacherData.name, "ok");
+        log("   角色: " + teacherData.role, "ok");
+        
+        // 5. 更新登录时间
+        log("5. 更新登录时间...", "info");
+        await sb.from("teachers").update({ 
+          last_login: new Date().toISOString() 
+        }).eq("id", data.user.id);
+        log("   ✅ 登录时间已更新", "ok");
+        
+        showSuccess("✅ 登录成功！欢迎 " + teacherData.name);
+        log("", "info");
+        log("═══════════════════════════════════════", "info");
+        log("🎉 所有测试通过！", "ok");
+        log("═══════════════════════════════════════", "info");
+        log("", "info");
+        log("现在可以访问教师后台:", "info");
+        log("https://2026-2hzg.vercel.app/teacher.html", "info");
+        log("", "info");
+        log("请在教师登录页面按 Ctrl+Shift+R 强制刷新", "warn");
+        
+        // 延迟跳转到教师后台
+        setTimeout(() => {
+          window.location.href = "/teacher.html";
+        }, 2000);
+        
+      } catch (e) {
+        log("❌ 错误: " + e.message, "err");
+        log(e.stack, "err");
+        showError(e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "教师登入 🔐";
+      }
+    }
+    
+    // 回车键登录
+    document.getElementById("password").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") login();
+    });
+    document.getElementById("email").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") login();
+    });
+    
+    log("页面已加载，准备就绪", "info");
+  </script>
+</body>
+</html>
