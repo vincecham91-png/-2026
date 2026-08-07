@@ -1,11 +1,5 @@
 {
-  "version": 2,
-  "routes": [
-    { "src": "/data/students\\.json", "dest": "/data/students.json" },
-    { "src": "/css/.*\\.css", "dest": "$0" },
-    { "src": "/js/.*\\.js", "dest": "$0" },
-    { "src": "/firebase/.*\\.js", "dest": "$0" },
-    { "src": "/assets/.*", "dest": "$0" },
-    { "src": "/.*", "dest": "/index.html" }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
