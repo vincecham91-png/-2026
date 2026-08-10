@@ -1,0 +1,77 @@
+-- ========================================
+-- 星图系统完整修复脚本
+-- ========================================
+-- 请复制到 Supabase SQL Editor 执行
+-- ========================================
+
+-- 1. 授予 anon 角色完整权限
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon;
+
+-- 2. 删除所有现有策略
+DROP POLICY IF EXISTS "students_all" ON students;
+DROP POLICY IF EXISTS "works_all" ON works;
+DROP POLICY IF EXISTS "classes_all" ON classes;
+DROP POLICY IF EXISTS "logs_all" ON logs;
+DROP POLICY IF EXISTS "settings_all" ON settings;
+DROP POLICY IF EXISTS "announcements_all" ON announcements;
+DROP POLICY IF EXISTS "import_insert" ON students;
+DROP POLICY IF EXISTS "import_insert" ON works;
+DROP POLICY IF EXISTS "import_insert" ON classes;
+DROP POLICY IF EXISTS "import_insert" ON logs;
+DROP POLICY IF EXISTS "teacher_select" ON teachers;
+DROP POLICY IF EXISTS "所有人可读学生名单" ON students;
+DROP POLICY IF EXISTS "学生可更新自己的资料" ON students;
+DROP POLICY IF EXISTS "所有人可读作品" ON works;
+DROP POLICY IF EXISTS "已认证用户可读写作品" ON works;
+DROP POLICY IF EXISTS "所有人可读班级" ON classes;
+
+-- 3. 创建新的完整策略（允许所有操作）
+CREATE POLICY "enable_all" ON students FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "enable_all" ON works FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "enable_all" ON classes FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "enable_all" ON logs FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "enable_all" ON settings FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "enable_all" ON announcements FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "enable_all" ON teachers FOR ALL USING (true) WITH CHECK (true);
+
+-- 4. 同步学生完成状态（从 works 表）
+UPDATE students s
+SET
+  completed = true,
+  upload_time = w.updated_at,
+  photo_url = w.photo_url,
+  photo_link = COALESCE(w.photo_link, ''),
+  reason = COALESCE(w.reason, ''),
+  updated_at = w.updated_at
+FROM works w
+WHERE s.student_id = w.student_id
+AND w.completed = true;
+
+-- 5. 清空并重建班级统计
+DELETE FROM classes;
+INSERT INTO classes (class_name, student_count, completed_count, completion_rate)
+SELECT
+  class,
+  COUNT(*) as student_count,
+  COUNT(CASE WHEN completed = true THEN 1 END) as completed_count,
+  ROUND(
+    COUNT(CASE WHEN completed = true THEN 1 END)::numeric / NULLIF(COUNT(*), 0) * 100,
+    0
+  ) as completion_rate
+FROM students
+GROUP BY class;
+
+-- 6. 验证结果
+SELECT '学生完成状态:' as info;
+SELECT student_id, name, class, completed FROM students WHERE completed = true LIMIT 10;
+
+SELECT '班级统计:' as info;
+SELECT * FROM classes ORDER BY class_name;
+
+SELECT '总完成统计:' as info;
+SELECT
+  COUNT(*) as total_students,
+  COUNT(CASE WHEN completed = true THEN 1 END) as completed_count,
+  ROUND(COUNT(CASE WHEN completed = true THEN 1 END)::numeric / COUNT(*) * 100, 2) as completion_rate
+FROM students;
