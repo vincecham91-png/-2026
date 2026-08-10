@@ -913,6 +913,27 @@ async function searchStudents(query) {
   return [];
 }
 
+/**
+ * 将中文班级名转换为 ASCII 路径（Supabase Storage 不支持中文路径）
+ * @param {string} className - 班级名称，如 "初二忠"
+ * @returns {string} ASCII 路径，如 "class-02-zhong"
+ */
+function classNameToStoragePath(className) {
+  if (!className) return 'default';
+  // 映射常见中文班级名为 ASCII
+  const classMap = {
+    '初二忠': 'class-02-zhong',
+    '初二孝': 'class-02-xiao',
+    '初二仁': 'class-02-ren',
+    '初二爱': 'class-02-ai',
+    '初三忠': 'class-03-zhong',
+    '初三孝': 'class-03-xiao',
+    '初三仁': 'class-03-ren',
+    '初三爱': 'class-03-ai'
+  };
+  return classMap[className] || className.replace(/[^\w\s-]/g, '').toLowerCase().replace(/\s+/g, '-');
+}
+
 // ========================================
 // Storage 操作
 // ========================================
@@ -938,7 +959,9 @@ async function uploadImage(file, className, studentId, onProgress) {
       const sb = getSupabase();
       if (sb) {
         const extension = file.name.split('.').pop().toLowerCase();
-        const path = `images/${className}/${studentId}/photo_${Date.now()}.${extension}`;
+        // ⚠️ 重要：使用 ASCII 路径，避免 Supabase Storage 中文路径问题
+        const classPath = classNameToStoragePath(className);
+        const path = `images/${classPath}/${studentId}/photo_${Date.now()}.${extension}`;
 
         // 上传到 Supabase Storage
         const { data, error } = await sb.storage
@@ -997,7 +1020,7 @@ async function deleteImage(photoURL) {
   if (!isSupabaseAvailable()) return;
   try {
     const sb = getSupabase();
-    // 从 URL 反推路径（格式：images/{class}/{studentId}/photo_{timestamp}.ext）
+    // 从 URL 反推路径（格式：images/{class-path}/{studentId}/photo_{timestamp}.ext）
     const urlObj = new URL(photoURL);
     const path = urlObj.pathname.split('/storage/v1/object/public/images/')[1];
     if (path) {
