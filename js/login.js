@@ -69,10 +69,15 @@
             allStudents.push(...students);
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('[Login] Supabase 加载失败:', e);
+      }
     }
 
-    allStudents = [];
+    if (allStudents.length === 0) {
+      console.error('[Login] ❌ 无法加载学生数据');
+      throw new Error('学生数据加载失败');
+    }
   }
 
   // ========================================
