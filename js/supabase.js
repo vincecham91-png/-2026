@@ -463,8 +463,31 @@ async function saveWork(studentId, workData) {
         .upsert(doc, { onConflict: 'student_id' });
 
       if (!upsertError) {
-        await updateStudentStatus(studentId, true, doc);
-        if (workData.class) await updateClassStats(workData.class);
+        // ✅ 同步更新 students 表的 completed 状态
+        const { error: studentError } = await sb
+          .from(TABLES.STUDENTS)
+          .update({
+            completed: true,
+            upload_time: now,
+            photo_url: doc.photo_url,
+            photo_link: doc.photo_link,
+            reason: doc.reason,
+            updated_at: now
+          })
+          .eq('student_id', studentId);
+
+        if (studentError) {
+          console.warn('[Supabase] 更新学生状态失败:', studentError.message);
+        }
+
+        // ✅ 重新计算班级统计
+        if (workData.class) {
+          const { error: statsError } = await updateClassStats(workData.class);
+          if (statsError) {
+            console.warn('[Supabase] 更新班级统计失败:', statsError.message);
+          }
+        }
+
         await addLog('upload', studentId, `${workData.name} 上传了作品`);
         console.log('[Supabase] ✅ 云端储存成功:', studentId);
         ldbSaveWork(studentId, workData);
