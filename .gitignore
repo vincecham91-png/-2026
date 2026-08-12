@@ -45,3 +45,5 @@ desktop.ini
 *.temp
 .playwright-mcp/
 .mcp.json
+
+.vercel
