@@ -131,7 +131,7 @@
       if (allWorks && allWorks.length > 0) {
         var ids = {};
         allWorks.forEach(function(w) {
-          var sid = w.studentId || w.id;
+          var sid = w.studentId || w.student_id || w.id;
           if (sid && !sid.startsWith('__')) ids[sid] = true;
         });
         completedCount = Object.keys(ids).length;
@@ -332,7 +332,7 @@
         try {
           var works = await S.getAllWorks();
           allWorks = works.filter(function(w) {
-            var sid = w.studentId || w.id || '';
+            var sid = w.studentId || w.student_id || w.id || '';
             return !sid.startsWith('__');
           });
           mergeWorksToStudents();
@@ -398,7 +398,7 @@
   function updateDashboardFromWorks() {
     var completedIds = {};
     allWorks.forEach(function(w) {
-      var sid = w.studentId || w.id;
+      var sid = w.studentId || w.student_id || w.id;
       if (sid && !sid.startsWith('__')) completedIds[sid] = true;
     });
     var completedCount = Object.keys(completedIds).length;
@@ -455,7 +455,7 @@
   // 查看学生作品
   // ========================================
   function openStudentWork(studentId) {
-    const work = allWorks.find(w => w.studentId === studentId || w.id === studentId);
+    const work = allWorks.find(w => w.studentId === studentId || w.student_id === studentId || w.id === studentId);
     const student = allStudents.find(s => s.studentId === studentId);
 
     if (!student) return;
