@@ -270,8 +270,8 @@
 
     var mergedCount = 0;
     allWorks.forEach(function(w) {
-      // 兼容两种字段名
-      var sid = w.studentId || w.id;
+      // 兼容驼峰和下划线两种字段名
+      var sid = w.studentId || w.student_id || w.id;
       if (!sid || sid.startsWith('__')) return;
 
       var student = allStudents.find(function(s) { return s.studentId === sid; });
@@ -280,7 +280,7 @@
         student.completed = true;
         // 兼容驼峰和下划线字段名
         student.photoURL = student.photoURL || w.photoURL || w.photo_url || '';
-        student.photoLink = student.photoLink || w.photoLink || w.photo_link || '';
+        student.photoLink = student.photoLink || w.photo_link || '';
         student.reason = student.reason || w.reason || '';
         student.uploadTime = student.uploadTime || w.uploadTime || w.updatedAt || w.updated_at || '';
       }
