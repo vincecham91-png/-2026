@@ -540,14 +540,18 @@
     el.id = 'teacherPresentMode';
     el.innerHTML = `
       <button class="present-mode__close" id="tPresentCloseBtn">ESC 退出</button>
-      ${imageSrc
-        ? `<img src="${imageSrc}" alt="${student.name}的作品" class="present-mode__image" onerror="this.style.display='none'"/>`
-        : '<div class="present-mode__empty">📷</div>'
-      }
-      <div class="present-mode__info">
-        <h2 class="present-mode__name">${S.escapeHTML ? S.escapeHTML(student.name) : student.name}</h2>
-        <p class="present-mode__class">${S.escapeHTML ? S.escapeHTML(student.class) : student.class}</p>
-        ${work?.reason || student.reason ? `<p class="present-mode__reason">${S.escapeHTML ? S.escapeHTML(work?.reason || student.reason) : (work?.reason || student.reason)}</p>` : ''}
+      <div class="present-mode__content">
+        <div class="present-mode__media">
+          ${imageSrc
+            ? `<img src="${imageSrc}" alt="${student.name}的作品" class="present-mode__image" onerror="this.style.display='none'"/>`
+            : '<div class="present-mode__empty">📷</div>'
+          }
+        </div>
+        <div class="present-mode__info">
+          <h2 class="present-mode__name">${S.escapeHTML ? S.escapeHTML(student.name) : student.name}</h2>
+          <p class="present-mode__class">${S.escapeHTML ? S.escapeHTML(student.class) : student.class}</p>
+          ${work?.reason || student.reason ? `<div class="present-mode__reason-box"><p class="present-mode__reason-label">分享原因</p><p class="present-mode__reason">${S.escapeHTML ? S.escapeHTML(work?.reason || student.reason) : (work?.reason || student.reason)}</p></div>` : ''}
+        </div>
       </div>
       <div class="present-controls">
         <button class="present-controls__btn" id="tPresentPrevBtn" aria-label="上一位" ${presentIndex <= 0 ? 'disabled' : ''}>&larr;</button>
