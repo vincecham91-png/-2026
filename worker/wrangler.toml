@@ -5,7 +5,7 @@ compatibility_date = "2026-01-01"
 # KV 圖片儲存（無需 R2 手動啟用）
 [[kv_namespaces]]
 binding = "PHOTOS"
-id = "4bee2824474948128e1b468b3c52b8d5"
+id = "YOUR_KV_NAMESPACE_ID_HERE"
 
 # 環境變數
 [vars]

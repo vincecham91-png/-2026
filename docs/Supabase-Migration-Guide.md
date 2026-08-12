@@ -169,16 +169,47 @@ node scripts/importSupabase.js  # 导入 Supabase
 
 ---
 
+# 部署准备清单
+
+## 1. Supabase 配置
+- [x] 创建 Supabase 项目
+- [x] 执行 `docs/supabase-setup.sql` 创建表格和权限
+- [x] 在 `firebase/supabaseConfig.js` 中填入 URL 和 anon key
+- [x] 导入学生数据（从 `data/students.json` 或 Excel）
+
+## 2. 教师账号
+- [ ] 在 Supabase Dashboard → Authentication → Users 创建教师账号
+- [ ] 在 `teachers` 表中添加教师记录（使用 Auth User ID）
+- [ ] 设置教师角色（`teacher` 或 `admin`）
+
+## 3. 部署前端
+- [ ] 配置 Vercel 或 GitHub Pages
+- [ ] 确保 `config.public.js` 中的 Supabase URL 和 Key 正确
+- [ ] 测试学生登录、上传、教师查看
+
+## 4. 安全设置
+- [x] 启用 RLS（Row Level Security）
+- [x] 配置 Storage 策略（公开读取，认证上传）
+- [ ] 配置 Auth 限制（仅允许学校域名邮箱）
+
+---
+
 # 常见问题
 
-## Q: 如何迁移现有 Firebase 数据？
-A: 使用 Supabase 内置的 Firebase 迁移工具，或导出 JSON 后手动导入 CSV。
+## Q: 数据同步问题
+**A**: 本项目已移除 localStorage 降级方案，所有数据通过 Supabase 云端同步。请确保：
+1. Supabase 配置正确（URL 和 Anon Key）
+2. 学生数据已导入 Supabase `students` 表
+3. RLS 策略正确配置（允许匿名读取）
 
-## Q: 学生密码如何迁移？
-A: 学生密码存储在 Firestore 中，迁移到 Supabase 后直接对应 password 字段。
+## Q: 教师看不到学生作品
+**A**: 检查以下项：
+1. 教师是否已通过 Supabase Auth 登录
+2. `works` 表的 RLS 策略是否允许读取
+3. 学生是否已通过 Supabase 上传作品（而非 localStorage）
 
-## Q: 实时同步还能用吗？
-A: 可以。使用 `js/supabase.js` 中的 `subscribeWorks()` 函数替代 `onSnapshot()`。
-
-## Q: 本地开发需要 Supabase 吗？
-A: 不需要。系统有完整的 localStorage 降级方案，无网络时仍可正常工作。
+## Q: 图片上传失败
+**A**: 检查以下项：
+1. Supabase Storage bucket `images` 是否创建
+2. Storage 策略是否允许上传（需要认证用户）
+3. 图片大小是否超过限制（建议 < 5MB）

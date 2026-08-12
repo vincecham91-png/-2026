@@ -67,41 +67,6 @@
     console.log('[Teacher] 初始化完成，已完成學生:', filteredStudents.filter(function(s){return s.completed||s.photoURL||s.photoLink;}).length);
   }
 
-  /**
-   * 強制將 localStorage 中的完成狀態合併到 allStudents
-   * 確保無論 Supabase 回傳什麼，localStorage 的狀態都會被套用
-   */
-  function forceMergeLocalStatus() {
-    try {
-      const raw = localStorage.getItem('spss_student_status');
-      if (!raw) return;
-      const statusMap = JSON.parse(raw);
-      let mergedCount = 0;
-
-      allStudents = allStudents.map(s => {
-        const st = statusMap[s.studentId];
-        if (st && (st.completed || st.photoURL || st.photoLink)) {
-          mergedCount++;
-          return { ...s, ...st };
-        }
-        return s;
-      });
-
-      filteredStudents = [...allStudents];
-
-      // 如果 allWorks 還是空的，直接從 localStorage 讀取
-      if (allWorks.length === 0) {
-        allWorks = readLocalWorks();
-      }
-
-      if (mergedCount > 0 || allWorks.length > 0) {
-        console.log('[Teacher] 🔧 強制合併 localStorage: ' + mergedCount + ' 名學生完成, ' + allWorks.length + ' 件作品');
-      }
-    } catch (e) {
-      console.warn('[Teacher] 合併失敗:', e);
-    }
-  }
-
   // ========================================
   // 权限检查
   // ========================================
@@ -160,7 +125,7 @@
   async function loadDashboardStats() {
     try {
       var totalStudents = allStudents.length;
-      var worksCompleted = 0;
+      var completedCount = 0;
 
       // 從 allWorks 計算實際完成人數（過濾診斷文檔）
       if (allWorks && allWorks.length > 0) {
@@ -169,21 +134,11 @@
           var sid = w.studentId || w.id;
           if (sid && !sid.startsWith('__')) ids[sid] = true;
         });
-        worksCompleted = Object.keys(ids).length;
-        console.log('[Teacher] 🔧 works 集合統計: ' + worksCompleted + ' 人已完成');
+        completedCount = Object.keys(ids).length;
+        console.log('[Teacher] ✅ works 集合統計: ' + completedCount + ' 人已完成');
       }
 
-      // 合併 localStorage 狀態
-      var localCompleted = 0;
-      try {
-        var statusMap = readLocalStudentStatus();
-        Object.keys(statusMap).forEach(function(sid) {
-          if (statusMap[sid] && statusMap[sid].completed) localCompleted++;
-        });
-      } catch (e) {}
-
-      // 以 works 為準（雲端數據），localStorage 為輔
-      var completedCount = Math.max(worksCompleted, localCompleted);
+      // 計算未完成人数和完成率
       var incompleteCount = totalStudents - completedCount;
       var rate = totalStudents > 0 ? Math.round((completedCount / totalStudents) * 100) : 0;
 
@@ -208,30 +163,34 @@
       if (S.getAllClassStats) {
         try {
           allClassStats = await S.getAllClassStats();
-        } catch (e) {}
+          console.log('[Teacher] ✅ 班级统计加载完成:', allClassStats.length + ' 个班级');
+        } catch (e) {
+          console.error('[Teacher] ❌ getAllClassStats 失败:', e);
+          allClassStats = [];
+        }
       }
 
       if (allClassStats.length === 0) {
+        // 从 students.json 计算班级统计（仅当 Supabase 不可用时）
         try {
           const response = await fetch('data/students.json');
           if (response.ok) {
             const students = await response.json();
-            const statusMap = readLocalStudentStatus();
             const classMap = {};
             students.forEach(s => {
               if (!classMap[s.class]) classMap[s.class] = { total: 0, completed: 0 };
               classMap[s.class].total++;
-              var st = statusMap[s.studentId];
-              if ((st && st.completed) || s.completed) classMap[s.class].completed++;
             });
             allClassStats = Object.entries(classMap).map(([cls, data]) => ({
               className: cls,
               studentCount: data.total,
-              completedCount: data.completed,
-              completionRate: Math.round((data.completed / data.total) * 100)
+              completedCount: 0,
+              completionRate: 0
             }));
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn('[Teacher] 本地班级统计加载失败:', e);
+        }
       }
 
       renderClassProgress(allClassStats);
@@ -286,19 +245,14 @@
       }
 
       var rawStudents = await response.json();
-      var statusMap = readLocalStudentStatus();
 
-      // 合併 localStorage 完成狀態
+      // 合併云端作品状态
       allStudents = rawStudents.map(function(s) {
-        var status = statusMap[s.studentId];
-        if (status && (status.completed || status.photoURL || status.photoLink)) {
-          return Object.assign({}, s, status, { id: s.studentId });
-        }
         return Object.assign({}, s, { id: s.studentId });
       });
 
       filteredStudents = allStudents.slice();
-      console.log('[Teacher] 學生載入: ' + allStudents.length + ' 人');
+      console.log('[Teacher] ✅ 學生載入: ' + allStudents.length + ' 人');
 
     } catch (error) {
       console.error('[Teacher] 学生列表加载失败:', error);
@@ -309,69 +263,35 @@
 
   /**
    * 將 Supabase works 的完成狀態合併到 allStudents
-   * 雲端數據優先於 localStorage
+   * 雲端數據優先
    */
   function mergeWorksToStudents() {
     if (!allWorks || allWorks.length === 0) return;
 
     var mergedCount = 0;
     allWorks.forEach(function(w) {
+      // 兼容两种字段名
       var sid = w.studentId || w.id;
-      if (!sid || sid.startsWith('__')) return; // 過濾診斷文檔
+      if (!sid || sid.startsWith('__')) return;
 
       var student = allStudents.find(function(s) { return s.studentId === sid; });
       if (student) {
         if (!student.completed) mergedCount++;
         student.completed = true;
-        student.photoURL = student.photoURL || w.photoURL || '';
-        student.photoLink = student.photoLink || w.photoLink || '';
+        // 兼容驼峰和下划线字段名
+        student.photoURL = student.photoURL || w.photoURL || w.photo_url || '';
+        student.photoLink = student.photoLink || w.photoLink || w.photo_link || '';
         student.reason = student.reason || w.reason || '';
-        student.uploadTime = student.uploadTime || w.updatedAt || w.createdAt || '';
+        student.uploadTime = student.uploadTime || w.uploadTime || w.updatedAt || w.updated_at || '';
       }
     });
 
     if (mergedCount > 0) {
-      console.log('[Teacher] 🔧 works 合併: ' + mergedCount + ' 名學生標記為完成');
+      console.log('[Teacher] ✅ works 合併: ' + mergedCount + ' 名學生標記為完成');
     }
 
     // 同步更新 filteredStudents
     filteredStudents = allStudents.slice();
-  }
-
-  /**
-   * 直接從 localStorage 讀取學生完成狀態（教師頁面自用降級）
-   */
-  function readLocalStudentStatus() {
-    try {
-      const raw = localStorage.getItem('spss_student_status');
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) {
-      return {};
-    }
-  }
-
-  /**
-   * 直接從 localStorage 讀取所有作品（教師頁面自用降級）
-   */
-  function readLocalWorks() {
-    try {
-      const raw = localStorage.getItem('spss_works_index');
-      const index = raw ? JSON.parse(raw) : [];
-      return index
-        .map(function(id) {
-          try {
-            const rawWork = localStorage.getItem('spss_work_' + id);
-            return rawWork ? Object.assign({id: id}, JSON.parse(rawWork)) : null;
-          } catch (e) { return null; }
-        })
-        .filter(Boolean)
-        .sort(function(a, b) {
-          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
-        });
-    } catch (e) {
-      console.warn('[Teacher] 本地作品讀取失敗:', e);
-      return [];
-    }
   }
 
   // ========================================
@@ -387,14 +307,13 @@
             var sid = w.studentId || w.id || '';
             return !sid.startsWith('__');
           });
-          console.log('[Teacher] 作品載入: ' + allWorks.length + ' 件');
+          console.log('[Teacher] ✅ 作品載入: ' + allWorks.length + ' 件');
+          // 立即合并作品状态
+          mergeWorksToStudents();
         } catch (e) {
-          console.warn('[Teacher] getAllWorks 失敗:', e);
+          console.error('[Teacher] ❌ getAllWorks 失败:', e);
+          allWorks = [];
         }
-      }
-
-      if (allWorks.length === 0) {
-        allWorks = readLocalWorks();
       }
     } catch (error) {
       console.error('[Teacher] 作品加载失败:', error);
@@ -408,7 +327,7 @@
   function listenToWorks() {
     if (!S.isSupabaseAvailable) {
       console.warn('[Teacher] Supabase 未初始化，使用輪詢備援');
-      // 備援：每 30 秒輪詢
+      // 備援：每 10 秒輪詢（加快速率）
       setInterval(async function() {
         try {
           var works = await S.getAllWorks();
@@ -420,7 +339,7 @@
           updateDashboardFromWorks();
           renderStudentsTable(filteredStudents);
         } catch(e) {}
-      }, 30000);
+      }, 10000);
       return;
     }
 

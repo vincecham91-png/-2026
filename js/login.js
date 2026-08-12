@@ -56,7 +56,7 @@
         return;
       }
     } catch (e) {
-      console.warn('[Login] 本地加载失败');
+      console.warn('[Login] 本地加载失败:', e);
     }
 
     // 尝试 Supabase

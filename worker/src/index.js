@@ -16,8 +16,26 @@
 // 配置
 // ========================================
 
+// 允许的 CORS 域名（支持 GitHub Pages + Cloudflare Pages）
+const ALLOWED_ORIGINS = [
+  'https://YOUR_GITHUB_USERNAME.github.io',
+  'https://ffe0a093.YOUR_PROJECT.pages.dev',
+];
+
+function getAllowedOrigin(request) {
+  const origin = request.headers.get('Origin') || '';
+  // 检查精确匹配
+  if (ALLOWED_ORIGINS.includes(origin)) return origin;
+  // 检查是否是 Cloudflare Pages 预览部署 (*.YOUR_PROJECT.pages.dev)
+  if (origin.endsWith('.YOUR_PROJECT.pages.dev')) return origin;
+  // 检查是否是 GitHub Pages
+  if (origin === 'https://YOUR_GITHUB_USERNAME.github.io') return origin;
+  // 返回第一个默认 origin
+  return ALLOWED_ORIGINS[0];
+}
+
 const CONFIG = {
-  ALLOWED_ORIGIN: 'https://vincecham91-png.github.io',
+  API_KEY: 'chew-star-2026-secure-key',
   MAX_SIZE: 10 * 1024 * 1024, // 10MB
 };
 
@@ -42,12 +60,14 @@ const KEYS = {
 // 工具函數
 // ========================================
 
+let currentOrigin = ALLOWED_ORIGINS[0];
+
 function json(data, status, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status: status || 200,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'Access-Control-Allow-Origin': CONFIG.ALLOWED_ORIGIN,
+      'Access-Control-Allow-Origin': currentOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Max-Age': '86400',
@@ -60,7 +80,7 @@ function cors() {
   return new Response(null, {
     status: 204,
     headers: {
-      'Access-Control-Allow-Origin': CONFIG.ALLOWED_ORIGIN,
+      'Access-Control-Allow-Origin': currentOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Max-Age': '86400',
@@ -71,7 +91,8 @@ function cors() {
 /** 驗證教師 API Key */
 function isTeacher(request, env) {
   const auth = request.headers.get('Authorization') || '';
-  return auth === `Bearer ${env.API_KEY}`;
+  const key = env.API_KEY || CONFIG.API_KEY;
+  return auth === `Bearer ${key}`;
 }
 
 /** 從 KV 讀取 JSON，不存在時返回預設值 */
@@ -174,7 +195,7 @@ async function handleTeacherLogin(request, env) {
         email: teacherData.email,
         name: teacherData.name,
         role: teacherData.role,
-        token: env.API_KEY, // 前端存此 token 用於後續請求
+        token: env.API_KEY || CONFIG.API_KEY, // 前端存此 token 用於後續請求
       },
     });
   } catch (e) {
@@ -564,7 +585,7 @@ async function handleUpload(request, env) {
     metadata: { className, studentId, contentType: file.type, size: file.size },
   });
 
-  const url = `https://star-photo-api.vincecham91.workers.dev/api/photos/${key}`;
+  const url = `https://YOUR_WORKER_DOMAIN.workers.dev/api/photos/${key}`;
   console.log(`[Worker] ✅ 已儲存圖片: ${key} (${(dataUrl.length / 1024).toFixed(1)}KB)`);
 
   return json({ success: true, url, key });
@@ -614,6 +635,7 @@ async function handleGetPhotoRaw(request, env) {
 // ========================================
 
 async function route(request, env) {
+  currentOrigin = getAllowedOrigin(request);
   const url = new URL(request.url);
   const method = request.method;
   const path = url.pathname;

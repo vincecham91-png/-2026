@@ -1,118 +1,126 @@
-# 星图网页（Star Photo Share System）
+# 星图照片分享系统 · Star Photo Share
 
-> Production Ready 学校照片分享系统。目标不是 Demo，不是 Prototype，是可部署到学校使用的正式系统。
+> 🌌 学校专用照片分享平台 | 4 班 101 学生 | Supabase + Cloudflare
+
+## 部署地址
+
+| 组件 | URL | 部署方式 |
+|------|-----|----------|
+| **前端** | `*.YOUR_PROJECT.pages.dev` | `npx wrangler pages deploy . --project-name=YOUR_PROJECT` |
+| **Worker** | `YOUR_PROJECT.workers.dev` | `cd worker && npx wrangler deploy` |
+| **Supabase** | `YOUR_PROJECT_ID_HERE.supabase.co` | MCP `execute_sql` |
 
 ## 技术栈
 
-- **前端**：HTML5 + CSS3 + Vanilla JavaScript（ES6 Modules）
-- **后端**：Supabase（Database + Auth + Storage + Realtime）
-- **部署**：Vercel + GitHub Pages
-- **无 Build Tool**：所有代码直接可执行（无需 Vite/Webpack）
-- **允许的库**：Supabase JS Client、Chart.js、SheetJS、Compressor.js
+- **前端**：HTML5 + CSS3 + Vanilla JS，无构建工具
+- **后端数据库**：Supabase（PostgreSQL + Auth + Storage + Realtime）
+- **后端 API**：Cloudflare Worker + KV（图片上传 base64 备用）
+- **部署**：Cloudflare Pages（前端）+ Cloudflare Workers（API）
 
-## 架构约束
+## 项目结构
 
-### 文件组织
 ```
-├── index.html          ← 首页
-├── login.html          ← 学生登录
-├── student.html        ← 学生仪表板
-├── gallery.html        ← 作品画廊
-├── teacher-login.html  ← 教师登录
-├── teacher.html        ← 教师仪表板
-├── css/                ← 每个页面独立 CSS 文件
-├── js/                 ← 每个页面独立 JS 模块
-├── firebase/           ← Supabase 配置与初始化
-├── data/               ← 静态数据（students.json）
-├── scripts/            ← 工具脚本（Excel 导入等）
-└── docs/               ← 项目文档
+-2026/
+├── index.html              ← 首页（班级星球 + 完成率）
+├── login.html              ← 学生登录
+├── student.html            ← 学生上传作品
+├── gallery.html            ← 作品画廊
+├── teacher-login.html      ← 教师登入（Supabase Auth）
+├── teacher.html            ← 教师仪表盘
+├── config.public.js        ← Supabase URL + anon key（全部页面必须加载）
+├── css/                    ← 样式表
+├── js/                     ← JS 模块（util.js, supabase.js, api.js, app.js…）
+├── firebase/               ← Supabase 配置（supabaseConfig.js）【历史命名，实际是 Supabase】
+├── data/                   ← students.json（101 名学生）
+├── worker/                 ← Cloudflare Worker 源码
+│   ├── src/index.js        ← Worker 主代码
+│   ├── wrangler.toml       ← KV binding + 部署配置
+│   └── src/init-kv.js      ← KV 初始化脚本
+├── scripts/                ← 工具脚本
+│   ├── run-sql.js          ← 直连 PG 执行多语句 SQL
+│   └── import-students-pg.js ← 批量导入学生到 Supabase
+└── docs/                   ← 文档
+    └── supabase-setup.sql  ← 数据库建表 SQL（55 条语句）
 ```
 
-### 关键规则
-- **JS 必须模块化**：每个页面一个 JS 文件，不得全写在 HTML 中
-- **Supabase 统一初始化**：所有页面 import `firebase/supabaseConfig.js`，禁止重复初始化
-- **权限分离**：学生只能访问自己的数据；教师通过 Supabase Auth + Role Check
-- **Session 检查**：禁止直接 URL 进入 `student.html`，必须先登录
+## 数据库（Supabase）
 
-## UI 设计系统
+### 表结构（7 张表，全部启用 RLS）
 
-- **主题**：星空 × 银河 × 星球 × Glassmorphism
-- **参考**：Apple VisionOS / NASA / Windows Fluent Design
-- **统一 Design System**：所有页面使用相同的 CSS Variables、颜色、字体、按钮样式
-- **响应式**：Desktop + Tablet + Mobile 全部覆盖
-- **Glassmorphism**：CSS backdrop-filter + 半透明 + 模糊
-- **深色主题**：现代化深色介面
+| 表 | 行数 | 说明 |
+|------|------|------|
+| `students` | 101 | 学生（student_id, name, class, password, photo_url, status） |
+| `works` | 0 | 作品（student_id, photo_url, photo_link, reason） |
+| `classes` | 4 | 班级统计（class_name, student_count, completed_count） |
+| `teachers` | 1 | 教师（FK → auth.users.id） |
+| `settings` | 0 | 系统配置（key/value JSONB） |
+| `logs` | 0 | 操作日志 |
+| `announcements` | 0 | 公告 |
 
-## 编码规则
+### 学生数据
 
-### 页面规则
-- 每次输出最多一个功能模块（一个 folder 或一个完整页面），不要一次输出所有代码
-- 文件超过 1000 行自动在下一次回复中继续
-- 不得重新生成已完成的旧文件
-
-### 数据库
-- Supabase Tables：`students`、`works`、`classes`、`teachers`、`settings`、`logs`、`announcements`
-- Storage Bucket：`images`
-- Schema 规范统一，全部使用常量定义表名称
-
-### 图片处理
-- 支持格式：JPG、PNG、WEBP、JPEG
-- 压缩：最长边 1600px，品质 85%
-- Storage：统一使用 Supabase Storage（优先）→ Worker R2（备用）→ base64（降级）
-
-## 禁止事项
-
-- ❌ TODO / FIXME / Placeholder / Coming Soon / 省略 / 略
-- ❌ `alert()` / `confirm()` / `prompt()` —— 统一使用 Toast Component
-- ❌ Magic String —— Supabase Table/Path 统一用常量
-- ❌ 不同页面不同 Design Token —— 统一 Design System
-- ❌ 只做 Desktop —— 必须 Responsive 三端
-
-## 迁移注意事项（Firebase → Supabase）
-
-1. 所有 Firebase CDN 已替换为 Supabase CDN
-2. `firebase/firebaseConfig.js` → `firebase/supabaseConfig.js`
-3. `js/firebase.js` → `js/supabase.js`
-4. 学生密码仍存储在 Supabase `students` 表中（前端比对）
-5. 教师认证使用 Supabase Auth（email/password）
-6. 实时监听使用 `subscribeWorks()` 替代 Firestore `onSnapshot()`
-7. 保持 localStorage 降级方案（Supabase 不可用时自动切换）
-
-## 部署准备
-
-1. 在 Supabase Dashboard 创建项目
-2. 执行 `docs/supabase-setup.sql` 创建表格和权限
-3. 在 `firebase/supabaseConfig.js` 中填入 URL 和 anon key
-4. 使用 `scripts/importSupabase.js` 导入学生数据
-5. 部署到 Vercel（已配置 `vercel.json`）
-
-## 文档索引
-
-Agent 应按需使用 Read 工具读取以下文档，不要一次性加载所有：
-
-| 需求 | 读取 |
+| 班级 | 人数 |
 |------|------|
-| 了解整体架构 | `docs/01-Project-Structure.md` |
-| 首页开发 | `docs/02-Homepage.md` |
-| 登录系统 | `docs/03-Login-System.md` |
-| 学生系统 | `docs/04-Student-System.md` |
-| 画廊系统 | `docs/05-Gallery-System.md` |
-| 教师系统 | `docs/06-Teacher-System.md` |
-| Firebase 配置 | `docs/07-Firebase-System.md` |
-| Excel 导入 | `docs/08-Excel-Import.md` |
-| GitHub 部署 | `docs/09-GitHub-Deployment.md` |
-| UI 设计细节 | `docs/10-UI-Design-System.md` |
-| 完整编码规范 | `docs/11-AI-Developer-Rules.md` |
-| 数据库 Schema | `docs/12-Database-Schema.md` |
-| 测试检查清单 | `docs/13-Testing-QA.md` |
-| 部署流程 | `docs/14-Deployment-Manual.md` |
-| **Supabase 迁移指南** | `docs/Supabase-Migration-Guide.md` |
-| **数据库建表 SQL** | `docs/supabase-setup.sql` |
+| 初二忠 | 36 |
+| 初二孝 | 26 |
+| 初二仁 | 22 |
+| 初二爱 | 17 |
 
-## 安全规则
+- 学生密码 = 各自学号
+- 教师：Cham Chin Hong / `teacher@school.edu.my` / `12345`（Supabase Auth）
 
-- Database RLS（Row Level Security）必须启用
-- Storage Policies 必须启用
-- 教师：Role Check（Supabase Auth + JWT Claims）
-- 学生：只能读取和修改自己的数据
-- 所有错误：Console + Log 表双记录
+### Storage
+
+- Bucket: `images`（公开读取，认证用户可上传/删除）
+
+### Realtime
+
+- `works` 表 + `students` 表已启用
+
+## 前端页面加载顺序（重要！）
+
+所有 HTML 必须按此顺序加载脚本：
+```html
+<script src="config.public.js"></script>              <!-- 1. Supabase 凭证 -->
+<script src="https://...supabase-js@2"></script>      <!-- 2. Supabase SDK -->
+<script src="firebase/supabaseConfig.js"></script>     <!-- 3. 初始化客户端 -->
+<script src="js/..."></script>                         <!-- 4. 业务模块 -->
+```
+
+**config.public.js 必须在 Supabase SDK 之前**，否则 Supabase 客户端初始化为空。
+
+## 认证方式
+
+- **教师**：Supabase Auth（email/password），JWT token
+- **学生**：Worker API 验证（学号 + 密码比对 students 表 / KV）
+- **图片上传**：Worker `Authorization: Bearer <API_KEY>`
+
+## 部署命令
+
+```bash
+# 前端
+cd d:/AIgames/-2026
+npx wrangler pages deploy . --project-name=YOUR_PROJECT --branch=main
+
+# Worker
+cd d:/AIgames/-2026/worker
+npx wrangler deploy
+```
+
+Cloudflare Pages 绑定 GitHub `vincecham91-png/-2026`（私有），push main 自动构建。
+
+## 修复过的坑
+
+1. **config.public.js 只在 teacher-login.html 加载** → 其他 5 个页面 Supabase 客户端为空。已加到全部页面。
+2. **Worker CORS 写死 `YOUR_GITHUB_USERNAME.github.io`** → Cloudflare Pages 域名被拦。改为动态检测 Origin。
+3. **Supabase MCP OAuth 不可用** → 改用 PAT（Personal Access Token），见根目录 `.mcp.json`。
+4. **`supabase db query` 不支持多语句** → 写 `scripts/run-sql.js` 直连 PG 逐条执行。
+5. **Pooler DNS 解析失败** → 直连 `db.YOUR_PROJECT_ID_HERE.supabase.co:5432`，不用 pooler。
+
+## Supabase 凭证速查
+
+- Project ref: `YOUR_PROJECT_ID_HERE`
+- Anon key: `YOUR_SUPABASE_ANON_KEY`（前端用）
+- Service role: `YOUR_SERVICE_ROLE_KEY`（脚本/Admin API）
+- DB password: `YOUR_DB_PASSWORD`（直连 PG 紧急备用）
+- Dashboard: `https://supabase.com/dashboard/project/YOUR_PROJECT_ID_HERE`

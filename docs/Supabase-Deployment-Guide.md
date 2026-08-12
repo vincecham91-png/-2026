@@ -1,6 +1,6 @@
 # Star Photo Share System - Supabase 部署指南
 
-> 项目：cortjiuduqdpiouqwgzp.supabase.co
+> 项目：YOUR_PROJECT_ID_HERE.supabase.co
 > 最后更新：2026-08-10
 
 ---
@@ -9,7 +9,7 @@
 
 ### 1.1 数据库初始化
 
-1. 打开 https://supabase.com/dashboard/project/cortjiuduqdpiouqwgzp
+1. 打开 https://supabase.com/dashboard/project/YOUR_PROJECT_ID_HERE
 2. 前往 **SQL Editor**
 3. 复制 [docs/supabase-setup.sql](docs/supabase-setup.sql) 内容
 4. 执行 SQL 创建表格和 RLS 策略
@@ -69,7 +69,7 @@ window.SPSS_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // �
 ### 3.1 Cloudflare Pages 部署
 
 ```bash
-npx wrangler pages deploy . --project-name=chewyenhan-star-photo-share --branch=main
+npx wrangler pages deploy . --project-name=YOUR_PROJECT --branch=main
 ```
 
 ### 3.2 Vercel 部署（可选）

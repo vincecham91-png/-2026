@@ -2,12 +2,14 @@
 node_modules/
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log*
 
-# Firebase
+# Firebase (legacy)
 firebase-debug.log
 firebase-debug.*.log
 .firebase/
+
+# Cloudflare
+.wrangler/
 
 # Environment
 .env

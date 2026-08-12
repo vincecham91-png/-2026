@@ -5,8 +5,7 @@
  * 2026-08-05
  *
  * 功能：Database CRUD、Storage 上传下载、学生验证、日志记录
- * 所有 Supabase 操作统一通过此模块
- * 保留 localStorage 降级方案（Supabase 不可用时自动切换）
+ * 所有数据统一通过 Supabase 云端存储
  */
 
 // ========================================
@@ -30,174 +29,6 @@ function isSupabaseAvailable() {
 }
 
 // ========================================
-// localStorage 降级方案（当 Supabase 未配置或失败时使用）
-// ========================================
-
-const LDB_PREFIX = 'spss_';
-const LDB_KEYS = {
-  WORKS_INDEX: 'spss_works_index',
-  WORK_PREFIX: 'spss_work_',
-  STUDENT_STATUS: 'spss_student_status',
-  CLASS_STATS: 'spss_class_stats',
-  LOGS: 'spss_logs',
-  IMAGE_PREFIX: 'spss_img_'
-};
-
-/**
- * 从 localStorage 读取 JSON 资料
- */
-function ldbGet(key) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : null;
-  } catch (e) {
-    console.warn('[LDB] 读取失败:', key, e);
-    return null;
-  }
-}
-
-/**
- * 写入 JSON 资料到 localStorage
- */
-function ldbSet(key, data) {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (e) {
-    console.warn('[LDB] 写入失败（可能超出容量）:', key, e);
-  }
-}
-
-/**
- * 删除 localStorage 资料
- */
-function ldbRemove(key) {
-  try {
-    localStorage.removeItem(key);
-  } catch (e) {
-    console.warn('[LDB] 删除失败:', key, e);
-  }
-}
-
-function ldbGetWorksIndex() {
-  return ldbGet(LDB_KEYS.WORKS_INDEX) || [];
-}
-
-function ldbAddToWorksIndex(studentId) {
-  const index = ldbGetWorksIndex();
-  if (!index.includes(studentId)) {
-    index.push(studentId);
-    ldbSet(LDB_KEYS.WORKS_INDEX, index);
-  }
-}
-
-function ldbRemoveFromWorksIndex(studentId) {
-  const index = ldbGetWorksIndex().filter(id => id !== studentId);
-  ldbSet(LDB_KEYS.WORKS_INDEX, index);
-}
-
-function ldbSaveWork(studentId, workData) {
-  const data = {
-    ...workData,
-    createdAt: workData.createdAt || new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  ldbSet(LDB_KEYS.WORK_PREFIX + studentId, data);
-  ldbAddToWorksIndex(studentId);
-}
-
-function ldbGetWork(studentId) {
-  return ldbGet(LDB_KEYS.WORK_PREFIX + studentId);
-}
-
-function ldbDeleteWork(studentId) {
-  ldbRemove(LDB_KEYS.WORK_PREFIX + studentId);
-  ldbRemove(LDB_KEYS.IMAGE_PREFIX + studentId);
-  ldbRemoveFromWorksIndex(studentId);
-}
-
-function ldbGetAllWorks() {
-  const index = ldbGetWorksIndex();
-  return index
-    .map(id => {
-      const work = ldbGetWork(id);
-      return work ? { id, ...work } : null;
-    })
-    .filter(Boolean)
-    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-}
-
-function ldbGetWorksByClass(className) {
-  return ldbGetAllWorks().filter(w => w.class === className)
-    .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-}
-
-function ldbUpdateStudentStatus(studentId, completed, data) {
-  const allStatus = ldbGet(LDB_KEYS.STUDENT_STATUS) || {};
-  allStatus[studentId] = {
-    ...allStatus[studentId],
-    completed,
-    uploadTime: completed ? new Date().toISOString() : null,
-    hasPhoto: completed ? !!(data.photoURL || data.photoLink) : false,
-    reason: data.reason || ''
-  };
-  ldbSet(LDB_KEYS.STUDENT_STATUS, allStatus);
-}
-
-function ldbGetStudentStatus(studentId) {
-  const allStatus = ldbGet(LDB_KEYS.STUDENT_STATUS) || {};
-  return allStatus[studentId] || null;
-}
-
-function ldbGetAllStudentStatus() {
-  const raw = ldbGet(LDB_KEYS.STUDENT_STATUS) || {};
-  const result = {};
-  Object.keys(raw).forEach(function(sid) {
-    const st = raw[sid];
-    result[sid] = Object.assign({}, st, {
-      photoURL: st.photoURL || (st.hasPhoto ? '__local__' : ''),
-      photoLink: st.photoLink || ''
-    });
-  });
-  return result;
-}
-
-function ldbUpdateClassStats(className, allStudents) {
-  const statusMap = ldbGetAllStudentStatus();
-  const classStudents = allStudents.filter(s => s.class === className);
-  const totalCount = classStudents.length;
-  let completedCount = 0;
-  classStudents.forEach(s => {
-    const status = statusMap[s.studentId];
-    if (status && status.completed) completedCount++;
-  });
-  const stats = ldbGet(LDB_KEYS.CLASS_STATS) || {};
-  stats[className] = {
-    className,
-    studentCount: totalCount,
-    completedCount,
-    completionRate: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
-    updatedAt: new Date().toISOString()
-  };
-  ldbSet(LDB_KEYS.CLASS_STATS, stats);
-}
-
-function ldbGetAllClassStats() {
-  const stats = ldbGet(LDB_KEYS.CLASS_STATS) || {};
-  return Object.values(stats).sort((a, b) => (a.className || '').localeCompare(b.className || ''));
-}
-
-function ldbAddLog(type, userId, message) {
-  const logs = ldbGet(LDB_KEYS.LOGS) || [];
-  logs.push({
-    type, userId, message,
-    timestamp: new Date().toISOString(),
-    userAgent: navigator.userAgent
-  });
-  if (logs.length > 200) logs.splice(0, logs.length - 200);
-  ldbSet(LDB_KEYS.LOGS, logs);
-}
-
-// ========================================
 // 学生相关操作
 // ========================================
 
@@ -207,8 +38,6 @@ function ldbAddLog(type, userId, message) {
  * @returns {Promise<Array>} 学生数组
  */
 async function getStudentsByClass(className) {
-  let cloudStudents = null;
-
   if (isSupabaseAvailable()) {
     try {
       const sb = getSupabase();
@@ -220,36 +49,16 @@ async function getStudentsByClass(className) {
         .order('name');
 
       if (!error && data) {
-        cloudStudents = data.map(row => ({ id: row.student_id || row.id, ...row }));
+        return data.map(row => ({ id: row.student_id || row.id, ...row }));
       }
+      if (error) throw error;
     } catch (error) {
-      console.warn('[Supabase] 获取班级学生失败，尝试本地:', error.message);
+      console.error('[Supabase] ❌ 获取班级学生失败:', error.message);
+      throw error;
     }
   }
 
-  if (cloudStudents && cloudStudents.length > 0) return cloudStudents;
-
-  // localStorage 降级
-  try {
-    const response = await fetch('data/students.json');
-    if (response.ok) {
-      let students = await response.json();
-      const statusMap = ldbGetAllStudentStatus();
-      const result = students
-        .filter(s => s.class === className)
-        .map(s => {
-          const status = statusMap[s.studentId];
-          if (status) return { ...s, ...status, id: s.studentId };
-          return { ...s, id: s.studentId };
-        })
-        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-      return result;
-    }
-  } catch (e) {
-    console.warn('[LDB] 本地学生读取失败:', e);
-  }
-
-  return [];
+  throw new Error('Supabase 未配置或查询失败');
 }
 
 /**
@@ -257,8 +66,6 @@ async function getStudentsByClass(className) {
  * @returns {Promise<Array>} 班级名称数组
  */
 async function getAllClasses() {
-  let cloudClasses = null;
-
   if (isSupabaseAvailable()) {
     try {
       const sb = getSupabase();
@@ -269,27 +76,16 @@ async function getAllClasses() {
 
       if (!error && data) {
         const classSet = new Set(data.map(row => row.class).filter(Boolean));
-        cloudClasses = Array.from(classSet).sort();
+        return Array.from(classSet).sort();
       }
+      if (error) throw error;
     } catch (error) {
-      console.warn('[Supabase] 获取班级列表失败，尝试本地:', error.message);
+      console.error('[Supabase] ❌ 获取班级列表失败:', error.message);
+      throw error;
     }
   }
 
-  if (cloudClasses && cloudClasses.length > 0) return cloudClasses;
-
-  try {
-    const response = await fetch('data/students.json');
-    if (response.ok) {
-      const students = await response.json();
-      const classSet = new Set(students.map(s => s.class));
-      return Array.from(classSet).sort();
-    }
-  } catch (e) {
-    console.warn('[LDB] 本地班级读取失败:', e);
-  }
-
-  return [];
+  throw new Error('Supabase 未配置或查询失败');
 }
 
 /**
@@ -321,20 +117,11 @@ async function verifyStudentLogin(className, name, password) {
       return { id: data.student_id || data.id, ...data };
     }
   } catch (error) {
-    console.error('[Supabase] 学生登录验证失败:', error);
+    console.error('[Supabase] ❌ 学生登录验证失败:', error);
     throw error;
   }
 
-  // localStorage 降级
-  try {
-    const response = await fetch('data/students.json');
-    if (response.ok) {
-      const students = await response.json();
-      const student = students.find(s => s.class === className && s.name === name && s.studentId);
-      if (student && student.password === password) return student;
-    }
-  } catch (e) {}
-  return null;
+  throw new Error('Supabase 未配置');
 }
 
 /**
@@ -353,30 +140,14 @@ async function getStudentById(studentId) {
         .single();
 
       if (!error && data) return { id: data.student_id || data.id, ...data };
+      if (error) throw error;
     } catch (error) {
-      console.warn('[Supabase] 获取学生资料失败，尝试本地:', error.message);
+      console.error('[Supabase] ❌ 获取学生资料失败:', error.message);
+      throw error;
     }
   }
 
-  // localStorage 降级
-  try {
-    const response = await fetch('data/students.json');
-    if (response.ok) {
-      const students = await response.json();
-      const student = students.find(s => s.studentId === studentId);
-      if (student) {
-        const status = ldbGetStudentStatus(studentId);
-        return {
-          id: studentId,
-          ...student,
-          ...(status || {}),
-          completed: status ? status.completed : (student.completed || false)
-        };
-      }
-    }
-  } catch (e) { /* 忽略 */ }
-
-  return null;
+  throw new Error('Supabase 未配置');
 }
 
 /**
@@ -398,10 +169,12 @@ async function updateStudentStatus(studentId, completed, data = {}) {
       await sb.from(TABLES.STUDENTS).update(updateData).eq('student_id', studentId);
       return;
     } catch (error) {
-      console.warn('[Supabase] 更新学生状态失败，降级到本地:', error.message);
+      console.error('[Supabase] ❌ 更新学生状态失败:', error.message);
+      throw error;
     }
   }
-  ldbUpdateStudentStatus(studentId, completed, data);
+
+  throw new Error('Supabase 未配置');
 }
 
 // ========================================
@@ -424,13 +197,14 @@ async function getStudentWork(studentId) {
         .single();
 
       if (!error && data) return { id: data.student_id || data.id, ...data };
+      if (error) throw error;
     } catch (error) {
-      console.warn('[Supabase] 获取作品失败，尝试本地:', error.message);
+      console.error('[Supabase] ❌ 获取作品失败:', error.message);
+      throw error;
     }
   }
 
-  const work = ldbGetWork(studentId);
-  return work ? { id: studentId, ...work } : null;
+  throw new Error('Supabase 未配置');
 }
 
 /**
@@ -463,72 +237,20 @@ async function saveWork(studentId, workData) {
         .upsert(doc, { onConflict: 'student_id' });
 
       if (!upsertError) {
-        // ✅ 同步更新 students 表的 completed 状态
-        const { error: studentError } = await sb
-          .from(TABLES.STUDENTS)
-          .update({
-            completed: true,
-            upload_time: now,
-            photo_url: doc.photo_url,
-            photo_link: doc.photo_link,
-            reason: doc.reason,
-            updated_at: now
-          })
-          .eq('student_id', studentId);
-
-        if (studentError) {
-          console.warn('[Supabase] 更新学生状态失败:', studentError.message);
-        }
-
-        // ✅ 重新计算班级统计
-        if (workData.class) {
-          const { error: statsError } = await updateClassStats(workData.class);
-          if (statsError) {
-            console.warn('[Supabase] 更新班级统计失败:', statsError.message);
-          }
-        }
-
+        await updateStudentStatus(studentId, true, doc);
+        if (workData.class) await updateClassStats(workData.class);
         await addLog('upload', studentId, `${workData.name} 上传了作品`);
         console.log('[Supabase] ✅ 云端储存成功:', studentId);
-        ldbSaveWork(studentId, workData);
         return;
       }
-      console.warn('[Supabase] Upsert 失败，降级到本地:', upsertError.message);
+      throw new Error(upsertError.message);
     } catch (error) {
-      console.warn('[Supabase] 储存失败，存本地:', error.message);
+      console.error('[Supabase] ❌ 储存失败:', error.message);
+      throw error; // 向上抛出错误，让调用方处理
     }
   }
 
-  // localStorage 备份
-  ldbSaveWork(studentId, workData);
-  ldbUpdateStudentStatus(studentId, true, {
-    photoURL: workData.photoURL || '', photoLink: workData.photoLink || '', reason: workData.reason || ''
-  });
-  if (workData.class) {
-    let allStudents = [];
-    try { const r = await fetch('data/students.json'); if (r.ok) allStudents = await r.json(); } catch (e) {}
-    ldbUpdateClassStats(workData.class, allStudents);
-  }
-  ldbAddLog('upload', studentId, `${workData.name} 上传了作品`);
-  console.log('[SPSS] 作品已储存:', studentId);
-
-  // 后台持续重试 Supabase 同步
-  if (isSupabaseAvailable()) {
-    const retrySync = async (retries = 5) => {
-      for (let i = 0; i < retries; i++) {
-        await new Promise(r => setTimeout(r, 3000 * (i + 1)));
-        try {
-          const sb = getSupabase();
-          await sb.from(TABLES.WORKS).upsert(doc, { onConflict: 'student_id' });
-          try { await updateStudentStatus(studentId, true, doc); } catch (e) {}
-          if (workData.class) { try { await updateClassStats(workData.class); } catch (e) {} }
-          console.log('[Supabase] ✅ 后台同步成功:', studentId);
-          return;
-        } catch (e) { console.warn('[Supabase] 后台同步重试 ' + (i + 1) + '/' + retries + ' 失败: ' + e.message); }
-      }
-    };
-    retrySync();
-  }
+  throw new Error('Supabase 未配置，无法保存作品');
 }
 
 /**
@@ -549,9 +271,7 @@ async function deleteWork(studentId, photoURL) {
       await updateStudentStatus(studentId, false, { photoURL: '', photoLink: '', reason: '' });
 
       // 删除 Storage 图片
-      if (photoURL && photoURL.startsWith('data:')) {
-        // base64 存储的图片不删除（已在数据中）
-      } else if (photoURL) {
+      if (photoURL && !photoURL.startsWith('data:')) {
         try {
           await deleteImage(photoURL);
         } catch (e) {
@@ -560,20 +280,15 @@ async function deleteWork(studentId, photoURL) {
       }
 
       await addLog('delete', studentId, `学生删除了作品`);
-      console.log('[Supabase] 作品已从云端删除:', studentId);
+      console.log('[Supabase] ✅ 作品已从云端删除:', studentId);
       return;
     } catch (error) {
-      console.warn('[Supabase] 云端删除失败，降级到本地:', error.message);
+      console.error('[Supabase] ❌ 云端删除失败:', error.message);
+      throw error;
     }
   }
 
-  const work = ldbGetWork(studentId);
-  ldbDeleteWork(studentId);
-  ldbUpdateStudentStatus(studentId, false, { photoURL: '', photoLink: '', reason: '' });
-  let allStudents = [];
-  try { const r = await fetch('data/students.json'); if (r.ok) allStudents = await r.json(); } catch (e) {}
-  if (work && work.class) ldbUpdateClassStats(work.class, allStudents);
-  ldbAddLog('delete', studentId, `学生删除了作品（本地）`);
+  throw new Error('Supabase 未配置，无法删除作品');
 }
 
 // ========================================
@@ -586,8 +301,6 @@ async function deleteWork(studentId, photoURL) {
  * @returns {Promise<Array>}
  */
 async function getWorksByClass(className) {
-  let cloudWorks = null;
-
   if (isSupabaseAvailable()) {
     try {
       const sb = getSupabase();
@@ -598,18 +311,16 @@ async function getWorksByClass(className) {
         .order('name');
 
       if (!error && data) {
-        cloudWorks = data.map(row => ({ id: row.student_id || row.id, ...row }));
+        return data.map(row => ({ id: row.student_id || row.id, ...row }));
       }
+      if (error) throw error;
     } catch (error) {
-      console.warn('[Supabase] 获取班级作品失败，尝试本地:', error.message);
+      console.error('[Supabase] ❌ 获取班级作品失败:', error.message);
+      throw error;
     }
   }
 
-  if (cloudWorks && cloudWorks.length > 0) return cloudWorks;
-
-  const localWorks = ldbGetWorksByClass(className);
-  console.log('[LDB] 从本地读取' + className + '作品:', localWorks.length, '件');
-  return localWorks;
+  throw new Error('Supabase 未配置或查询失败');
 }
 
 /**
@@ -617,8 +328,6 @@ async function getWorksByClass(className) {
  * @returns {Promise<Array>}
  */
 async function getAllWorks() {
-  let cloudWorks = null;
-
   if (isSupabaseAvailable()) {
     try {
       const sb = getSupabase();
@@ -628,18 +337,29 @@ async function getAllWorks() {
         .order('updated_at', { ascending: false });
 
       if (!error && data) {
-        cloudWorks = data.map(row => ({ id: row.student_id || row.id, ...row }));
+        // 返回规范化的驼峰字段，兼容 teacher.js / gallery.js
+        return data.map(row => ({
+          id: row.student_id || row.id,
+          studentId: row.student_id || row.id,
+          name: row.name,
+          class: row.class,
+          photoURL: row.photo_url || '',
+          photoLink: row.photo_link || '',
+          reason: row.reason || '',
+          completed: row.completed || false,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          ...row
+        }));
       }
+      if (error) throw error;
     } catch (error) {
-      console.warn('[Supabase] 获取所有作品失败，尝试本地:', error.message);
+      console.error('[Supabase] ❌ 获取所有作品失败:', error.message);
+      throw error;
     }
   }
 
-  if (cloudWorks && cloudWorks.length > 0) return cloudWorks;
-
-  const localWorks = ldbGetAllWorks();
-  console.log('[LDB] 从本地读取作品:', localWorks.length, '件');
-  return localWorks;
+  throw new Error('Supabase 未配置或查询失败');
 }
 
 // ========================================
@@ -677,13 +397,12 @@ async function updateClassStats(className) {
       }, { onConflict: 'class_name' });
       return;
     } catch (error) {
-      console.warn('[Supabase] 更新班级统计失败，降级到本地:', error.message);
+      console.error('[Supabase] ❌ 更新班级统计失败:', error.message);
+      throw error;
     }
   }
 
-  let allStudents = [];
-  try { const r = await fetch('data/students.json'); if (r.ok) allStudents = await r.json(); } catch (e) {}
-  ldbUpdateClassStats(className, allStudents);
+  throw new Error('Supabase 未配置');
 }
 
 /**
@@ -702,36 +421,14 @@ async function getClassStats(className) {
         .single();
 
       if (!error && data) return { id: data.class_name, ...data };
+      if (error) throw error;
     } catch (error) {
-      console.warn('[Supabase] 获取班级统计失败，尝试本地:', error.message);
+      console.error('[Supabase] ❌ 获取班级统计失败:', error.message);
+      throw error;
     }
   }
 
-  const stats = ldbGet(LDB_KEYS.CLASS_STATS) || {};
-  if (stats[className]) return stats[className];
-
-  try {
-    const response = await fetch('data/students.json');
-    if (response.ok) {
-      const students = await response.json();
-      const classStudents = students.filter(s => s.class === className);
-      const statusMap = ldbGetAllStudentStatus();
-      let completedCount = 0;
-      classStudents.forEach(s => {
-        const status = statusMap[s.studentId];
-        if (status && status.completed) completedCount++;
-      });
-      return {
-        className,
-        studentCount: classStudents.length,
-        completedCount,
-        completionRate: classStudents.length > 0
-          ? Math.round((completedCount / classStudents.length) * 100) : 0
-      };
-    }
-  } catch (e) { /* 忽略 */ }
-
-  return null;
+  throw new Error('Supabase 未配置');
 }
 
 /**
@@ -739,8 +436,6 @@ async function getClassStats(className) {
  * @returns {Promise<Array>}
  */
 async function getAllClassStats() {
-  let cloudStats = null;
-
   if (isSupabaseAvailable()) {
     try {
       const sb = getSupabase();
@@ -750,48 +445,16 @@ async function getAllClassStats() {
         .order('class_name');
 
       if (!error && data) {
-        cloudStats = data.map(row => ({ id: row.class_name, ...row }));
+        return data.map(row => ({ id: row.class_name, ...row }));
       }
+      if (error) throw error;
     } catch (error) {
-      console.warn('[Supabase] 获取所有班级统计失败，尝试本地:', error.message);
+      console.error('[Supabase] ❌ 获取所有班级统计失败:', error.message);
+      throw error;
     }
   }
 
-  if (cloudStats && cloudStats.length > 0) return cloudStats;
-
-  // 从 JSON 补全所有班级
-  try {
-    const response = await fetch('data/students.json');
-    if (response.ok) {
-      const students = await response.json();
-      const statusMap = ldbGetAllStudentStatus();
-      const classMap = {};
-      students.forEach(s => {
-        if (!classMap[s.class]) classMap[s.class] = { total: 0, completed: 0 };
-        classMap[s.class].total++;
-        const st = statusMap[s.studentId];
-        if (st && st.completed) classMap[s.class].completed++;
-      });
-      const merged = Object.entries(classMap).map(([className, data]) => {
-        const ldbStats = ldbGetAllClassStats();
-        const ldb = ldbStats.find(cs => cs.className === className);
-        return {
-          className,
-          studentCount: data.total,
-          completedCount: ldb ? Math.max(data.completed, ldb.completedCount || 0) : data.completed,
-          completionRate: 0
-        };
-      });
-      merged.forEach(c => {
-        c.completionRate = c.studentCount > 0 ? Math.round((c.completedCount / c.studentCount) * 100) : 0;
-      });
-      return merged.sort((a, b) => a.className.localeCompare(b.className));
-    }
-  } catch (e) {
-    console.warn('[LDB] 班级统计计算失败:', e);
-  }
-
-  return [];
+  throw new Error('Supabase 未配置或查询失败');
 }
 
 // ========================================
@@ -821,34 +484,14 @@ async function getOverviewStats() {
           completionRate: totalStudents > 0 ? Math.round((completedCount / totalStudents) * 100) : 0
         };
       }
+      if (error) throw error;
     } catch (error) {
-      console.warn('[Supabase] 获取概览统计失败，尝试本地:', error.message);
+      console.error('[Supabase] ❌ 获取概览统计失败:', error.message);
+      throw error;
     }
   }
 
-  try {
-    const response = await fetch('data/students.json');
-    if (response.ok) {
-      const students = await response.json();
-      const statusMap = ldbGetAllStudentStatus();
-      const totalStudents = students.length;
-      let completedCount = 0;
-      students.forEach(s => {
-        const status = statusMap[s.studentId];
-        if (status && status.completed) completedCount++;
-      });
-      return {
-        totalStudents,
-        completedCount,
-        incompleteCount: totalStudents - completedCount,
-        completionRate: totalStudents > 0 ? Math.round((completedCount / totalStudents) * 100) : 0
-      };
-    }
-  } catch (e) {
-    console.warn('[LDB] 本地统计失败:', e);
-  }
-
-  return { totalStudents: 0, completedCount: 0, incompleteCount: 0, completionRate: 0 };
+  throw new Error('Supabase 未配置或查询失败');
 }
 
 // ========================================
@@ -861,8 +504,6 @@ async function getOverviewStats() {
  * @returns {Promise<Array>}
  */
 async function searchStudents(query) {
-  let cloudStudents = null;
-
   if (isSupabaseAvailable()) {
     try {
       const sb = getSupabase();
@@ -874,7 +515,7 @@ async function searchStudents(query) {
 
       if (!error && data) {
         const keyword = query.toLowerCase();
-        cloudStudents = data
+        return data
           .map(row => ({ id: row.student_id || row.id, ...row }))
           .filter(s =>
             (s.name || '').toLowerCase().includes(keyword) ||
@@ -882,56 +523,14 @@ async function searchStudents(query) {
             (s.class || '').includes(keyword)
           );
       }
+      if (error) throw error;
     } catch (error) {
-      console.warn('[Supabase] 搜索学生失败，尝试本地:', error.message);
+      console.error('[Supabase] ❌ 搜索学生失败:', error.message);
+      throw error;
     }
   }
 
-  if (cloudStudents && cloudStudents.length > 0) return cloudStudents;
-
-  try {
-    const response = await fetch('data/students.json');
-    if (response.ok) {
-      let students = await response.json();
-      const statusMap = ldbGetAllStudentStatus();
-      students = students.map(s => {
-        const status = statusMap[s.studentId];
-        if (status) return { ...s, ...status, id: s.studentId };
-        return { ...s, id: s.studentId };
-      });
-      const keyword = query.toLowerCase();
-      return students.filter(s =>
-        (s.name || '').toLowerCase().includes(keyword) ||
-        (s.studentId || '').includes(keyword) ||
-        (s.class || '').includes(keyword)
-      );
-    }
-  } catch (e) {
-    console.warn('[LDB] 本地学生搜索失败:', e);
-  }
-
-  return [];
-}
-
-/**
- * 将中文班级名转换为 ASCII 路径（Supabase Storage 不支持中文路径）
- * @param {string} className - 班级名称，如 "初二忠"
- * @returns {string} ASCII 路径，如 "class-02-zhong"
- */
-function classNameToStoragePath(className) {
-  if (!className) return 'default';
-  // 映射常见中文班级名为 ASCII
-  const classMap = {
-    '初二忠': 'class-02-zhong',
-    '初二孝': 'class-02-xiao',
-    '初二仁': 'class-02-ren',
-    '初二爱': 'class-02-ai',
-    '初三忠': 'class-03-zhong',
-    '初三孝': 'class-03-xiao',
-    '初三仁': 'class-03-ren',
-    '初三爱': 'class-03-ai'
-  };
-  return classMap[className] || className.replace(/[^\w\s-]/g, '').toLowerCase().replace(/\s+/g, '-');
+  throw new Error('Supabase 未配置或查询失败');
 }
 
 // ========================================
@@ -953,15 +552,16 @@ function classNameToStoragePath(className) {
 async function uploadImage(file, className, studentId, onProgress) {
   if (onProgress) onProgress(5);
 
-  // 路径 A：Supabase Storage
+  // 路径 A：Supabase Storage（使用拼音路径避免中文问题）
   if (isSupabaseAvailable()) {
     try {
       const sb = getSupabase();
       if (sb) {
         const extension = file.name.split('.').pop().toLowerCase();
-        // ⚠️ 重要：使用 ASCII 路径，避免 Supabase Storage 中文路径问题
-        const classPath = classNameToStoragePath(className);
-        const path = `images/${classPath}/${studentId}/photo_${Date.now()}.${extension}`;
+        // 使用拼音路径（与 api.js 保持一致，避免中文 400 错误）
+        const pinyinMap = { '初二忠':'chuer-zhong','初二孝':'chuer-xiao','初二仁':'chuer-ren','初二爱':'chuer-ai' };
+        const pinyinClass = pinyinMap[className] || className.toLowerCase().replace(/\s+/g, '-');
+        const path = `${pinyinClass}/${studentId}/photo_${Date.now()}.${extension}`;
 
         // 上传到 Supabase Storage
         const { data, error } = await sb.storage
@@ -980,7 +580,15 @@ async function uploadImage(file, className, studentId, onProgress) {
         return urlData.publicUrl;
       }
     } catch (storageError) {
-      console.warn('[Storage] Supabase Storage 失败，降级到 base64:', storageError.message);
+      console.warn('[Storage] Supabase Storage 失败:', storageError.message);
+      // 如果是 RLS 错误（权限不足），自动降级到 base64
+      if (storageError.message && (
+        storageError.message.includes('RLS') ||
+        storageError.message.includes('permission') ||
+        storageError.message.includes('must be owner')
+      )) {
+        console.warn('[Storage] 检測到 RLS 權限錯誤，自動降級到 base64');
+      }
     }
   }
 
@@ -1020,7 +628,7 @@ async function deleteImage(photoURL) {
   if (!isSupabaseAvailable()) return;
   try {
     const sb = getSupabase();
-    // 从 URL 反推路径（格式：images/{class-path}/{studentId}/photo_{timestamp}.ext）
+    // 从 URL 反推路径（格式：images/{class}/{studentId}/photo_{timestamp}.ext）
     const urlObj = new URL(photoURL);
     const path = urlObj.pathname.split('/storage/v1/object/public/images/')[1];
     if (path) {
@@ -1152,10 +760,13 @@ async function addLog(type, userId, message) {
       });
       return;
     } catch (error) {
-      console.warn('[Supabase] 记录日志失败:', error);
+      console.error('[Supabase] ❌ 记录日志失败:', error);
+      throw error;
     }
   }
-  ldbAddLog(type, userId, message);
+
+  // 记录到控制台（不存储）
+  console.log(`[Log] ${type}: ${userId} - ${message}`);
 }
 
 // ========================================
@@ -1177,11 +788,11 @@ async function getAnnouncements(limit = 5) {
       .order('created_at', { ascending: false })
       .limit(limit);
 
-    if (error) return [];
+    if (error) throw error;
     return data.map(row => ({ id: row.id, ...row }));
   } catch (error) {
-    console.error('[Supabase] 获取公告失败:', error);
-    return [];
+    console.error('[Supabase] ❌ 获取公告失败:', error);
+    throw error;
   }
 }
 
@@ -1257,4 +868,4 @@ window.SPSS.addLog = addLog;
 window.SPSS.getAnnouncements = getAnnouncements;
 window.SPSS.subscribeWorks = subscribeWorks;
 
-console.log('[SPSS] Supabase 模块已加载（含 localStorage 降级方案）');
+console.log('[SPSS] Supabase 模块已加载（云端存储）');

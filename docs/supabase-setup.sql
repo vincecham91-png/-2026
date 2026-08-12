@@ -139,9 +139,16 @@ DROP POLICY IF EXISTS "所有人可读作品" ON works;
 CREATE POLICY "所有人可读作品" ON works
   FOR SELECT USING (true);
 
+-- 允许已认证用户和匿名用户读写作品
 DROP POLICY IF EXISTS "已认证用户可读写作品" ON works;
 CREATE POLICY "已认证用户可读写作品" ON works
-  FOR ALL USING (auth.uid() IS NOT NULL);
+  FOR ALL USING (auth.uid() IS NOT NULL)
+  WITH CHECK (auth.uid() IS NOT NULL);
+
+-- 允许匿名用户读取作品（用于画廊展示）
+DROP POLICY IF EXISTS "匿名可读作品" ON works;
+CREATE POLICY "匿名可读作品" ON works
+  FOR SELECT USING (true);
 
 -- 班级表策略
 DROP POLICY IF EXISTS "所有人可读班级" ON classes;
@@ -199,6 +206,11 @@ ON CONFLICT (id) DO NOTHING;
 DROP POLICY IF EXISTS "所有人可读取图片" ON storage.objects;
 CREATE POLICY "所有人可读取图片" ON storage.objects
   FOR SELECT USING (bucket_id = 'images');
+
+-- 允许任何人读取公开 bucket
+DROP POLICY IF EXISTS "公开读取图片" ON storage.objects;
+CREATE POLICY "公开读取图片" ON storage.objects
+  FOR SELECT TO PUBLIC USING (bucket_id = 'images');
 
 DROP POLICY IF EXISTS "认证用户可上传图片" ON storage.objects;
 CREATE POLICY "认证用户可上传图片" ON storage.objects

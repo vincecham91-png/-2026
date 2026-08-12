@@ -17,9 +17,26 @@ function getSupabaseClient() {
 }
 
 /**
+ * 班级名称转拼音（用于 Storage 路径，避免中文 400 错误）
+ */
+const CLASS_NAME_MAP = {
+  '初二忠': 'chuer-zhong',
+  '初二孝': 'chuer-xiao',
+  '初二仁': 'chuer-ren',
+  '初二爱': 'chuer-ai'
+};
+
+/**
+ * 获取拼音班级名
+ */
+function getPinyinClassName(className) {
+  return CLASS_NAME_MAP[className] || className.toLowerCase().replace(/\s+/g, '-');
+}
+
+/**
  * 上传到 Supabase Storage
  * @param {File} file - 图片文件
- * @param {string} className - 班级
+ * @param {string} className - 班级（中文）
  * @param {string} studentId - 学号
  * @param {Function} onProgress - 进度回调
  * @returns {Promise<string>} 公开 URL
@@ -29,7 +46,9 @@ async function uploadToSupabaseStorage(file, className, studentId, onProgress) {
   if (!sb) throw new Error('Supabase 未初始化');
 
   const extension = file.name.split('.').pop().toLowerCase();
-  const path = `images/${className}/${studentId}/photo_${Date.now()}.${extension}`;
+  // 使用拼音路径（Supabase Storage 不支持中文路径，即使编码也不行）
+  const pinyinClass = getPinyinClassName(className);
+  const path = `${pinyinClass}/${studentId}/photo_${Date.now()}.${extension}`;
 
   const { data, error } = await sb.storage
     .from('images')
@@ -88,7 +107,7 @@ async function uploadImage(file, className, studentId, onProgress) {
 
       const controller = new AbortController();
       const t = setTimeout(() => controller.abort(), 15000);
-      const res = await fetch('https://star-photo-share.chewyenhan.workers.dev/api/upload', {
+      const res = await fetch('https://YOUR_WORKER_DOMAIN.workers.dev/api/upload', {
         method: 'POST',
         body: form,
         signal: controller.signal
@@ -122,7 +141,7 @@ async function isWorkerAvailable() {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
-    const res = await fetch('https://star-photo-share.chewyenhan.workers.dev/api/health', { signal: controller.signal });
+    const res = await fetch('https://YOUR_WORKER_DOMAIN.workers.dev/api/health', { signal: controller.signal });
     clearTimeout(timeout);
     const data = await res.json();
     return data.status === 'ok';
