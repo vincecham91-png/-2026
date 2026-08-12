@@ -142,11 +142,11 @@
           studentId: s.studentId,
           name: s.name,
           class: s.class,
-          photoURL: work ? (work.photoURL || '') : (s.photoURL || ''),
-          photoLink: work ? (work.photoLink || '') : (s.photoLink || ''),
+          photoURL: work ? (work.photoURL || work.photo_url || '') : (s.photoURL || ''),
+          photoLink: work ? (work.photoLink || work.photo_link || '') : (s.photoLink || ''),
           reason: work ? (work.reason || '') : (s.reason || ''),
           completed: !!(work || s.completed || s.photoURL || s.photoLink),
-          updatedAt: work ? (work.updatedAt || work.createdAt) : (s.uploadTime || null)
+          updatedAt: work ? (work.updatedAt || work.updated_at || work.createdAt) : (s.uploadTime || null)
         };
       });
 
