@@ -304,7 +304,7 @@
           var works = await S.getAllWorks();
           // 過濾診斷文檔
           allWorks = works.filter(function(w) {
-            var sid = w.studentId || w.id || '';
+            var sid = w.studentId || w.student_id || w.id || '';
             return !sid.startsWith('__');
           });
           console.log('[Teacher] ✅ 作品載入: ' + allWorks.length + ' 件');
