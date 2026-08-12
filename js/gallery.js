@@ -130,7 +130,7 @@
           works = await S.getWorksByClass(currentClass);
         }
         works.forEach(w => {
-          worksMap[w.studentId || w.id] = w;
+          worksMap[w.studentId || w.student_id || w.id] = w;
         });
       } catch (e) { console.warn('[Gallery] 作品数据加载失败'); }
 
