@@ -1109,16 +1109,5 @@
         "photoLink": "",
         "reason": "",
         "status": "active"
-    },
-    {
-        "studentId": "26107",
-        "name": "林家泽",
-        "class": "初二仁",
-        "password": "26107",
-        "completed": false,
-        "photoURL": "",
-        "photoLink": "",
-        "reason": "",
-        "status": "active"
     }
 ]
