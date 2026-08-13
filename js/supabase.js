@@ -445,7 +445,15 @@ async function getAllClassStats() {
         .order('class_name');
 
       if (!error && data) {
-        return data.map(row => ({ id: row.class_name, ...row }));
+        // 映射 snake_case 到 camelCase
+        return data.map(row => ({
+          id: row.class_name,
+          className: row.class_name,
+          studentCount: row.student_count,
+          completedCount: row.completed_count,
+          completionRate: row.completion_rate,
+          ...row
+        }));
       }
       if (error) throw error;
     } catch (error) {
