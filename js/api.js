@@ -107,7 +107,7 @@ async function uploadImage(file, className, studentId, onProgress) {
 
       const controller = new AbortController();
       const t = setTimeout(() => controller.abort(), 15000);
-      const res = await fetch('https://YOUR_WORKER_DOMAIN.workers.dev/api/upload', {
+      const res = await fetch('https://disabled.example.com/api/upload', {
         method: 'POST',
         body: form,
         signal: controller.signal
@@ -141,7 +141,7 @@ async function isWorkerAvailable() {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
-    const res = await fetch('https://YOUR_WORKER_DOMAIN.workers.dev/api/health', { signal: controller.signal });
+    const res = await fetch('https://disabled.example.com/api/health', { signal: controller.signal });
     clearTimeout(timeout);
     const data = await res.json();
     return data.status === 'ok';

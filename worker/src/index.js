@@ -585,7 +585,7 @@ async function handleUpload(request, env) {
     metadata: { className, studentId, contentType: file.type, size: file.size },
   });
 
-  const url = `https://YOUR_WORKER_DOMAIN.workers.dev/api/photos/${key}`;
+  const url = `https://disabled.example.com/api/photos/${key}`;
   console.log(`[Worker] ✅ 已儲存圖片: ${key} (${(dataUrl.length / 1024).toFixed(1)}KB)`);
 
   return json({ success: true, url, key });
